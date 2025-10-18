@@ -35,13 +35,25 @@ const RoleSelection = () => {
 
   return (
     <div className="min-h-screen bg-gradient-subtle flex flex-col items-center justify-center p-4">
+      <div className="absolute top-4 right-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate("/admin")}
+          className="gap-2"
+        >
+          <Shield className="h-4 w-4" />
+          Admin Login
+        </Button>
+      </div>
+      
       <div className="max-w-6xl w-full space-y-8">
         <div className="text-center space-y-4">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary shadow-primary mb-4">
             <Utensils className="h-10 w-10 text-primary-foreground" />
           </div>
           <h1 className="text-5xl font-bold bg-gradient-hero bg-clip-text text-transparent">
-            FoodConnect
+            Open Fridge
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Bridging surplus food with those who need it most. Choose your role to get started.
@@ -75,16 +87,6 @@ const RoleSelection = () => {
               </Card>
             );
           })}
-        </div>
-
-        <div className="text-center">
-          <button
-            onClick={() => navigate("/admin")}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-2"
-          >
-            <Shield className="h-4 w-4" />
-            Admin Portal
-          </button>
         </div>
       </div>
     </div>
