@@ -197,21 +197,18 @@ export type Database = {
           created_at: string
           email: string
           id: string
-          role: Database["public"]["Enums"]["user_role"]
           updated_at: string
         }
         Insert: {
           created_at?: string
           email: string
           id: string
-          role: Database["public"]["Enums"]["user_role"]
           updated_at?: string
         }
         Update: {
           created_at?: string
           email?: string
           id?: string
-          role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
         }
         Relationships: []
@@ -267,6 +264,27 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       vendor_qr_codes: {
         Row: {
           created_at: string
@@ -301,9 +319,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
+      app_role: "consumer" | "vendor" | "charitable_organisation" | "admin"
       cuisine_type:
         | "chinese"
         | "malay"
@@ -455,6 +480,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["consumer", "vendor", "charitable_organisation", "admin"],
       cuisine_type: [
         "chinese",
         "malay",

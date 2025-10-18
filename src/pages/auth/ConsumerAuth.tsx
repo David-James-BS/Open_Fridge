@@ -25,18 +25,17 @@ const ConsumerAuth = () => {
         email,
         password,
         options: {
-          data: {
-            role: "consumer"
-          }
+          emailRedirectTo: `${window.location.origin}/`
         }
       });
 
       if (error) throw error;
 
       if (data.user) {
-        await supabase.from("profiles").insert({
-          id: data.user.id,
-          email,
+        // Profile is created automatically by trigger
+        // Add user role
+        await supabase.from("user_roles").insert({
+          user_id: data.user.id,
           role: "consumer"
         });
 
@@ -71,13 +70,14 @@ const ConsumerAuth = () => {
       if (error) throw error;
 
       // Verify user role
-      const { data: profile } = await supabase
-        .from("profiles")
+      const { data: userRole } = await supabase
+        .from("user_roles")
         .select("role")
-        .eq("id", data.user.id)
+        .eq("user_id", data.user.id)
+        .eq("role", "consumer")
         .single();
 
-      if (profile?.role !== "consumer") {
+      if (!userRole) {
         await supabase.auth.signOut();
         throw new Error("This account is not registered as a consumer");
       }
