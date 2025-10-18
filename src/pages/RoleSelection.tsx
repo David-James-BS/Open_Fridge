@@ -34,18 +34,16 @@ const RoleSelection = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-subtle flex flex-col items-center justify-center p-4">
-      <div className="absolute top-4 right-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate("/admin")}
-          className="gap-2"
-        >
-          <Shield className="h-4 w-4" />
-          Admin Login
-        </Button>
-      </div>
+    <div className="min-h-screen bg-gradient-subtle flex flex-col items-center justify-center p-4 relative">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => navigate("/admin")}
+        className="absolute top-4 right-4 gap-2 text-xs"
+      >
+        <Shield className="h-3 w-3" />
+        Admin
+      </Button>
       
       <div className="max-w-6xl w-full space-y-8">
         <div className="text-center space-y-4">
