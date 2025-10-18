@@ -25,6 +25,10 @@ Deno.serve(async (req) => {
 
     const { qrCode, portionsToCollect, reservationId } = await req.json();
 
+    if (!portionsToCollect || portionsToCollect < 1 || portionsToCollect > 5) {
+      throw new Error('Portions must be between 1 and 5');
+    }
+
     console.log('Validating QR scan:', { qrCode, userId: user.id, portionsToCollect, reservationId });
 
     // Get vendor from QR code
