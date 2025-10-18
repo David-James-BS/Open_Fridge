@@ -363,7 +363,7 @@ export type Database = {
         | "nut_free"
         | "none"
       license_status: "pending" | "approved" | "rejected"
-      listing_status: "active" | "expired" | "completed"
+      listing_status: "active" | "expired" | "completed" | "cancelled"
       user_role: "consumer" | "vendor" | "charitable_organisation" | "admin"
     }
     CompositeTypes: {
@@ -517,7 +517,7 @@ export const Constants = {
         "none",
       ],
       license_status: ["pending", "approved", "rejected"],
-      listing_status: ["active", "expired", "completed"],
+      listing_status: ["active", "expired", "completed", "cancelled"],
       user_role: ["consumer", "vendor", "charitable_organisation", "admin"],
     },
   },
