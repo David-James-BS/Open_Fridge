@@ -55,13 +55,16 @@ export type Database = {
       }
       food_listings: {
         Row: {
+          available_for_charity: boolean | null
           best_before: string
           created_at: string
           cuisine: Database["public"]["Enums"]["cuisine_type"]
           description: string | null
           dietary_info: Database["public"]["Enums"]["dietary_type"][]
           id: string
+          image_url: string | null
           location: string
+          priority_until: string | null
           remaining_portions: number
           status: Database["public"]["Enums"]["listing_status"]
           title: string
@@ -70,13 +73,16 @@ export type Database = {
           vendor_id: string
         }
         Insert: {
+          available_for_charity?: boolean | null
           best_before: string
           created_at?: string
           cuisine: Database["public"]["Enums"]["cuisine_type"]
           description?: string | null
           dietary_info?: Database["public"]["Enums"]["dietary_type"][]
           id?: string
+          image_url?: string | null
           location: string
+          priority_until?: string | null
           remaining_portions: number
           status?: Database["public"]["Enums"]["listing_status"]
           title: string
@@ -85,13 +91,16 @@ export type Database = {
           vendor_id: string
         }
         Update: {
+          available_for_charity?: boolean | null
           best_before?: string
           created_at?: string
           cuisine?: Database["public"]["Enums"]["cuisine_type"]
           description?: string | null
           dietary_info?: Database["public"]["Enums"]["dietary_type"][]
           id?: string
+          image_url?: string | null
           location?: string
+          priority_until?: string | null
           remaining_portions?: number
           status?: Database["public"]["Enums"]["listing_status"]
           title?: string
@@ -223,6 +232,7 @@ export type Database = {
           id: string
           listing_id: string
           organisation_id: string
+          pickup_time: string | null
           portions_reserved: number
         }
         Insert: {
@@ -234,6 +244,7 @@ export type Database = {
           id?: string
           listing_id: string
           organisation_id: string
+          pickup_time?: string | null
           portions_reserved: number
         }
         Update: {
@@ -245,6 +256,7 @@ export type Database = {
           id?: string
           listing_id?: string
           organisation_id?: string
+          pickup_time?: string | null
           portions_reserved?: number
         }
         Relationships: [
