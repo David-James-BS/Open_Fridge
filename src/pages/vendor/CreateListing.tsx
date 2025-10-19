@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { ArrowLeft, Loader2, Upload } from 'lucide-react';
-import Autocomplete from 'react-google-autocomplete';
+
 import { CuisineType, DietaryType } from '@/types/food';
 import { Checkbox } from '@/components/ui/checkbox';
 
@@ -171,17 +171,12 @@ export default function CreateListing() {
 
             <div>
               <Label htmlFor="location">Location *</Label>
-              <Autocomplete
-                apiKey={import.meta.env.VITE_GOOGLE_PLACES_API_KEY}
-                onPlaceSelected={(place) => {
-                  setFormData({ ...formData, location: place.formatted_address || '' });
-                }}
-                options={{
-                  types: ['establishment', 'geocode'],
-                }}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                placeholder="Start typing your location..."
-                defaultValue={formData.location}
+              <Input
+                id="location"
+                value={formData.location}
+                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                placeholder="e.g., 123 Main Street, Singapore 123456"
+                required
               />
             </div>
 
