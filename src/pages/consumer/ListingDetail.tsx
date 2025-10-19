@@ -7,8 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { QRScanner } from '@/components/scanner/QRScanner';
+import { isMobileDevice } from '@/utils/deviceDetection';
 import { toast } from 'sonner';
-import { Loader2, ArrowLeft, MapPin, Clock, QrCode, Heart, HeartOff } from 'lucide-react';
+import { Loader2, ArrowLeft, MapPin, Clock, QrCode, Heart, HeartOff, Monitor } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function ListingDetail() {
@@ -20,12 +22,15 @@ export default function ListingDetail() {
   const [loading, setLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     if (!user) {
       navigate('/auth/consumer');
       return;
     }
+    setIsMobile(isMobileDevice());
     fetchListing();
     checkFollowStatus();
   }, [id, user]);
@@ -110,24 +115,41 @@ export default function ListingDetail() {
     }
   };
 
-  const handleScanQR = async () => {
+  const handleScanQR = () => {
+    if (!isMobile) {
+      toast.error('QR code scanning is only available on mobile devices');
+      return;
+    }
+
+    if (!listing) return;
+    setShowScanner(true);
+  };
+
+  const handleQRCodeScanned = async (scannedCode: string) => {
+    setShowScanner(false);
+
     if (!listing) return;
 
     try {
-      // Get vendor QR code
+      // Verify the scanned QR code belongs to this listing's vendor
       const { data: qrData, error } = await supabase
         .from('vendor_qr_codes')
-        .select('qr_code')
-        .eq('vendor_id', listing.vendor_id)
+        .select('vendor_id')
+        .eq('qr_code', scannedCode)
         .single();
 
       if (error) throw error;
 
-      // Navigate to scan page with QR code and listing ID
-      navigate(`/scan?code=${qrData.qr_code}&listingId=${listing.id}`);
+      if (qrData.vendor_id !== listing.vendor_id) {
+        toast.error('This QR code does not match the selected listing');
+        return;
+      }
+
+      // Navigate to portions input page
+      navigate(`/scan?code=${scannedCode}&listingId=${listing.id}`);
     } catch (error) {
-      console.error('Error fetching QR code:', error);
-      toast.error('Failed to load QR code');
+      console.error('Error validating QR code:', error);
+      toast.error('Invalid QR code');
     }
   };
 
@@ -258,10 +280,31 @@ export default function ListingDetail() {
             </div>
 
             {listing.status === 'active' && listing.remaining_portions > 0 && (
-              <Button onClick={handleScanQR} size="lg" className="w-full">
-                <QrCode className="h-5 w-5 mr-2" />
-                Scan QR Code to Collect
-              </Button>
+              <>
+                <Button 
+                  onClick={handleScanQR} 
+                  size="lg" 
+                  className="w-full"
+                  disabled={!isMobile}
+                >
+                  {isMobile ? (
+                    <>
+                      <QrCode className="h-5 w-5 mr-2" />
+                      Scan QR Code to Collect
+                    </>
+                  ) : (
+                    <>
+                      <Monitor className="h-5 w-5 mr-2" />
+                      QR Scanning Available on Mobile Only
+                    </>
+                  )}
+                </Button>
+                {!isMobile && (
+                  <p className="text-xs text-muted-foreground text-center">
+                    Please access this page from a mobile device to scan the vendor's QR code
+                  </p>
+                )}
+              </>
             )}
 
             {listing.status !== 'active' && (
@@ -280,6 +323,13 @@ export default function ListingDetail() {
           </div>
         </CardContent>
       </Card>
+
+      {showScanner && (
+        <QRScanner 
+          onScan={handleQRCodeScanned}
+          onClose={() => setShowScanner(false)}
+        />
+      )}
     </div>
   );
 }
