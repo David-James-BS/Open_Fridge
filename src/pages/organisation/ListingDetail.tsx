@@ -134,17 +134,16 @@ export default function OrganisationListingDetail() {
     if (!id) return;
 
     try {
-      // Calculate total reserved portions (not yet collected)
+      // Read reserved_portions from the listing itself (maintained by trigger)
       const { data, error } = await supabase
-        .from('reservations')
-        .select('portions_reserved')
-        .eq('listing_id', id)
-        .eq('collected', false);
+        .from('food_listings')
+        .select('reserved_portions')
+        .eq('id', id)
+        .maybeSingle();
 
       if (error) throw error;
 
-      const total = data?.reduce((sum, res) => sum + res.portions_reserved, 0) || 0;
-      setTotalReservedPortions(total);
+      setTotalReservedPortions(data?.reserved_portions || 0);
     } catch (error) {
       console.error('Error fetching reserved portions:', error);
     }

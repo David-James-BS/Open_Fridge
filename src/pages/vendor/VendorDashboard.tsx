@@ -19,7 +19,6 @@ export default function VendorDashboard() {
   const [activeListing, setActiveListing] = useState<FoodListing | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [reservedPortions, setReservedPortions] = useState(0);
 
   useEffect(() => {
     if (!user) return;
@@ -48,33 +47,6 @@ export default function VendorDashboard() {
     };
   }, [user]);
 
-  useEffect(() => {
-    if (!activeListing) return;
-
-    fetchReservedPortions();
-
-    // Set up realtime subscription for reservations
-    const reservationsChannel = supabase
-      .channel('vendor_reservations')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'reservations',
-          filter: `listing_id=eq.${activeListing.id}`,
-        },
-        () => {
-          fetchReservedPortions();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(reservationsChannel);
-    };
-  }, [activeListing]);
-
   const fetchActiveListing = async () => {
     if (!user) return;
     
@@ -94,21 +66,6 @@ export default function VendorDashboard() {
       toast.error('Failed to load listing');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchReservedPortions = async () => {
-    if (!activeListing) return;
-
-    const { data, error } = await supabase
-      .from('reservations')
-      .select('portions_reserved')
-      .eq('listing_id', activeListing.id)
-      .eq('collected', false);
-
-    if (!error && data) {
-      const total = data.reduce((sum, r) => sum + r.portions_reserved, 0);
-      setReservedPortions(total);
     }
   };
 
@@ -232,7 +189,7 @@ export default function VendorDashboard() {
             <PortionStatusBar
               totalPortions={activeListing.total_portions}
               remainingPortions={activeListing.remaining_portions}
-              reservedPortions={reservedPortions}
+              reservedPortions={activeListing.reserved_portions || 0}
             />
 
             <div className="flex flex-wrap gap-2">

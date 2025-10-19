@@ -118,12 +118,16 @@ export default function ScanQR() {
     setProcessing(true);
 
     try {
+      const body: any = { qrCode };
+      if (userRole === 'consumer') {
+        body.portionsToCollect = portions;
+      }
+      if (userRole === 'charitable_organisation') {
+        body.reservationId = reservation?.id || null;
+      }
+
       const { data, error } = await supabase.functions.invoke('validate-qr-scan', {
-        body: {
-          qrCode,
-          portionsToCollect: userRole === 'charitable_organisation' ? reservation?.portions_reserved : portions,
-          reservationId: reservation?.id || null,
-        },
+        body,
       });
 
       if (error) throw error;

@@ -38,6 +38,7 @@ export interface FoodListing {
   available_for_charity: boolean;
   created_at: string;
   updated_at: string;
+  reserved_portions: number;
 }
 
 export interface Reservation {

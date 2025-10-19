@@ -66,6 +66,7 @@ export type Database = {
           location: string
           priority_until: string | null
           remaining_portions: number
+          reserved_portions: number
           status: Database["public"]["Enums"]["listing_status"]
           title: string
           total_portions: number
@@ -84,6 +85,7 @@ export type Database = {
           location: string
           priority_until?: string | null
           remaining_portions: number
+          reserved_portions?: number
           status?: Database["public"]["Enums"]["listing_status"]
           title: string
           total_portions: number
@@ -102,6 +104,7 @@ export type Database = {
           location?: string
           priority_until?: string | null
           remaining_portions?: number
+          reserved_portions?: number
           status?: Database["public"]["Enums"]["listing_status"]
           title?: string
           total_portions?: number

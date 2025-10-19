@@ -6,7 +6,7 @@ import { FoodListing } from '@/types/food';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
+import { PortionStatusBar } from '@/components/food/PortionStatusBar';
 import { QRScanner } from '@/components/scanner/QRScanner';
 import { isMobileDevice } from '@/utils/deviceDetection';
 import { toast } from 'sonner';
@@ -303,15 +303,11 @@ export default function ListingDetail() {
           </div>
 
           <div className="border-t pt-6 space-y-4">
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-muted-foreground">Available Portions</span>
-                <span className="font-medium">
-                  {listing.remaining_portions} of {listing.total_portions}
-                </span>
-              </div>
-              <Progress value={percentageLeft} className="h-3" />
-            </div>
+            <PortionStatusBar
+              totalPortions={listing.total_portions}
+              remainingPortions={listing.remaining_portions}
+              reservedPortions={listing.reserved_portions || 0}
+            />
 
             {listing.status === 'active' && listing.remaining_portions > 0 && (
               <>
