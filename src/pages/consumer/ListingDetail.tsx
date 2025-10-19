@@ -125,12 +125,22 @@ export default function ListingDetail() {
     setShowScanner(true);
   };
 
-  const handleQRCodeScanned = async (scannedCode: string) => {
+  const handleQRCodeScanned = async (scannedText: string) => {
     setShowScanner(false);
 
     if (!listing) return;
 
     try {
+      // Extract code from a full URL if needed
+      let scannedCode = scannedText;
+      try {
+        if (scannedText.startsWith('http')) {
+          const url = new URL(scannedText);
+          const codeParam = url.searchParams.get('code');
+          if (codeParam) scannedCode = codeParam;
+        }
+      } catch {}
+
       // Verify the scanned QR code belongs to this listing's vendor
       const { data: qrData, error } = await supabase
         .from('vendor_qr_codes')
