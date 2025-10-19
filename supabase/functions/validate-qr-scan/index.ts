@@ -12,10 +12,17 @@ Deno.serve(async (req) => {
       throw new Error('Missing authorization header');
     }
 
+    // Create client for user authentication
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_ANON_KEY')!,
       { global: { headers: { Authorization: authHeader } } }
+    );
+
+    // Create admin client for bypassing RLS on updates
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
     const { data: { user } } = await supabase.auth.getUser();
@@ -88,8 +95,8 @@ Deno.serve(async (req) => {
         throw collectionError;
       }
 
-      // Update remaining portions
-      const { error: updateError } = await supabase
+      // Update remaining portions using admin client to bypass RLS
+      const { error: updateError } = await supabaseAdmin
         .from('food_listings')
         .update({
           remaining_portions: activeListing.remaining_portions - portionsToCollect,

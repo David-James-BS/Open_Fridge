@@ -121,8 +121,8 @@ export default function OrganisationListingDetail() {
     setReserving(true);
 
     try {
-      // Dummy payment processing
-      const depositAmount = portionsToReserve * 2; // $2 per portion
+      // Dummy payment processing - flat $50 deposit
+      const depositAmount = 50;
       
       toast.info(`Processing deposit payment of $${depositAmount}...`);
       
@@ -335,7 +335,7 @@ export default function OrganisationListingDetail() {
                     onChange={(e) => setPortionsToReserve(Math.min(maxAllowed, Math.max(1, parseInt(e.target.value) || 1)))}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Deposit: ${portionsToReserve * 2} ($2 per portion)
+                    Deposit: $50 (flat rate)
                   </p>
                 </div>
                 <Button 
