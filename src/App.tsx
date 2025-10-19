@@ -14,6 +14,11 @@ import ConsumerDashboard from "./pages/consumer/ConsumerDashboard";
 import OrganisationDashboard from "./pages/organisation/OrganisationDashboard";
 import VendorDashboard from "./pages/vendor/VendorDashboard";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import CreateListing from "./pages/vendor/CreateListing";
+import EditListing from "./pages/vendor/EditListing";
+import QRCodePage from "./pages/vendor/QRCodePage";
+import VendorHistory from "./pages/vendor/VendorHistory";
+import ScanQR from "./pages/ScanQR";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +40,11 @@ const App = () => (
             <Route path="/consumer/dashboard" element={<ConsumerDashboard />} />
             <Route path="/organisation/dashboard" element={<OrganisationDashboard />} />
             <Route path="/vendor/dashboard" element={<VendorDashboard />} />
+            <Route path="/vendor/create-listing" element={<CreateListing />} />
+            <Route path="/vendor/edit-listing/:id" element={<EditListing />} />
+            <Route path="/vendor/qr-code" element={<QRCodePage />} />
+            <Route path="/vendor/history" element={<VendorHistory />} />
+            <Route path="/scan" element={<ScanQR />} />
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

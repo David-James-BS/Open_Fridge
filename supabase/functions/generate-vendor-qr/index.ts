@@ -8,58 +8,76 @@ Deno.serve(async (req) => {
 
   try {
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('Missing authorization header');
-    }
+    const requestBody = req.method === 'POST' ? await req.json().catch(() => ({})) : {};
+    const vendorIdFromRequest = requestBody.vendorId;
 
-    const supabase = createClient(
+    const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_ANON_KEY')!,
-      { global: { headers: { Authorization: authHeader } } }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      throw new Error('Unauthorized');
+    let vendorId: string;
+
+    // If vendorId is provided (from approve-license edge function), use it directly
+    if (vendorIdFromRequest) {
+      vendorId = vendorIdFromRequest;
+      console.log('Generating QR code for vendor from service:', vendorId);
+    } else {
+      // Otherwise, get from auth header (user is calling this themselves)
+      if (!authHeader) {
+        throw new Error('Missing authorization header');
+      }
+
+      const supabase = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_ANON_KEY')!,
+        { global: { headers: { Authorization: authHeader } } }
+      );
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('Unauthorized');
+      }
+
+      // Check if user is a vendor
+      const { data: userRoles, error: roleError } = await supabaseAdmin
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'vendor')
+        .single();
+
+      if (roleError || !userRoles) {
+        throw new Error('Only vendors can generate QR codes');
+      }
+
+      vendorId = user.id;
+      console.log('Generating QR code for vendor:', vendorId);
     }
-
-    // Check if user is a vendor
-    const { data: userRoles, error: roleError } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .eq('role', 'vendor')
-      .single();
-
-    if (roleError || !userRoles) {
-      throw new Error('Only vendors can generate QR codes');
-    }
-
-    console.log('Generating QR code for vendor:', user.id);
 
     // Check if QR code already exists for this vendor
-    const { data: existingQR } = await supabase
+    const { data: existingQR } = await supabaseAdmin
       .from('vendor_qr_codes')
       .select('*')
-      .eq('vendor_id', user.id)
+      .eq('vendor_id', vendorId)
       .maybeSingle();
 
     if (existingQR) {
-      console.log('QR code already exists for vendor:', user.id);
+      console.log('QR code already exists for vendor:', vendorId);
       return new Response(
-        JSON.stringify({ qr_code: existingQR.qr_code }),
+        JSON.stringify({ qrCode: existingQR.qr_code }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // Generate unique QR code (just use vendor ID)
-    const qrCode = user.id;
+    const qrCode = vendorId;
 
-    // Insert QR code into database
-    const { data, error } = await supabase
+    // Insert QR code into database using admin client
+    const { data, error } = await supabaseAdmin
       .from('vendor_qr_codes')
       .insert({
-        vendor_id: user.id,
+        vendor_id: vendorId,
         qr_code: qrCode,
       })
       .select()
@@ -73,7 +91,7 @@ Deno.serve(async (req) => {
     console.log('QR code generated successfully:', data);
 
     return new Response(
-      JSON.stringify({ qr_code: data.qr_code }),
+      JSON.stringify({ qrCode: data.qr_code }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
