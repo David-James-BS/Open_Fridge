@@ -76,14 +76,12 @@ export default function VendorDashboard() {
         .from('food_listings')
         .update({ status: 'cancelled' })
         .eq('id', activeListing.id)
-        .eq('vendor_id', user.id)
-        .select()
-        .single();
+        .eq('vendor_id', user.id);
 
       if (error) throw error;
       
       toast.success('Listing cancelled');
-      setActiveListing(null);
+      fetchActiveListing();
     } catch (error) {
       console.error('Error cancelling listing:', error);
       toast.error('Failed to cancel listing');
