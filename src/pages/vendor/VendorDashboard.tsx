@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { Loader2, Plus, QrCode, Edit, X, Clock, MapPin, LogOut, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -144,13 +145,30 @@ export default function VendorDashboard() {
                 >
                   <Edit className="h-4 w-4" />
                 </Button>
-                <Button
-                  size="icon"
-                  variant="outline"
-                  onClick={handleCancelListing}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      size="icon"
+                      variant="outline"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Cancel Listing</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to cancel this listing? This action cannot be undone and the listing will be moved to history.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>No, keep listing</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleCancelListing}>
+                        Yes, cancel listing
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </CardTitle>
           </CardHeader>
