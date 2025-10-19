@@ -12,6 +12,9 @@ import { ArrowLeft, Store, Upload, Clock } from "lucide-react";
 const VendorAuth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [stallName, setStallName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [location, setLocation] = useState("");
   const [loading, setLoading] = useState(false);
   const [showLicenseUpload, setShowLicenseUpload] = useState(false);
   const [licenseFile, setLicenseFile] = useState<File | null>(null);
@@ -50,7 +53,12 @@ const VendorAuth = () => {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/`
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            stall_name: stallName,
+            phone: phone,
+            location: location
+          }
         }
       });
 
@@ -325,12 +333,45 @@ const VendorAuth = () => {
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="space-y-2">
+                  <Label htmlFor="stall-name">Stall Name</Label>
+                  <Input
+                    id="stall-name"
+                    type="text"
+                    value={stallName}
+                    onChange={(e) => setStallName(e.target.value)}
+                    placeholder="e.g., Happy Kitchen"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="signup-email">Email</Label>
                   <Input
                     id="signup-email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="e.g., +65 1234 5678"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="location">Location</Label>
+                  <Input
+                    id="location"
+                    type="text"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder="e.g., 123 Main St, Singapore"
                     required
                   />
                 </div>

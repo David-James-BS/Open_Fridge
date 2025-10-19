@@ -13,6 +13,7 @@ import AdminAuth from "./pages/auth/AdminAuth";
 import ConsumerDashboard from "./pages/consumer/ConsumerDashboard";
 import OrganisationDashboard from "./pages/organisation/OrganisationDashboard";
 import VendorDashboard from "./pages/vendor/VendorDashboard";
+import VendorProfile from "./pages/vendor/VendorProfile";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import CreateListing from "./pages/vendor/CreateListing";
 import EditListing from "./pages/vendor/EditListing";
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/consumer/dashboard" element={<ConsumerDashboard />} />
             <Route path="/organisation/dashboard" element={<OrganisationDashboard />} />
             <Route path="/vendor/dashboard" element={<VendorDashboard />} />
+            <Route path="/vendor/profile" element={<VendorProfile />} />
             <Route path="/vendor/create-listing" element={<CreateListing />} />
             <Route path="/vendor/edit-listing/:id" element={<EditListing />} />
             <Route path="/vendor/qr-code" element={<QRCodePage />} />
