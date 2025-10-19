@@ -12,6 +12,7 @@ import { ArrowLeft, Utensils } from "lucide-react";
 const ConsumerAuth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -25,14 +26,21 @@ const ConsumerAuth = () => {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/`
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            name
+          }
         }
       });
 
       if (error) throw error;
 
       if (data.user) {
-        // Profile is created automatically by trigger
+        // Update profile with name
+        await supabase.from("profiles").update({
+          name
+        }).eq("id", data.user.id);
+
         // Add user role
         await supabase.from("user_roles").insert({
           user_id: data.user.id,
@@ -156,6 +164,16 @@ const ConsumerAuth = () => {
 
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="signup-name">Full Name</Label>
+                  <Input
+                    id="signup-name"
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                  />
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-email">Email</Label>
                   <Input

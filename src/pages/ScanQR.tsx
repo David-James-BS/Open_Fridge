@@ -16,6 +16,7 @@ export default function ScanQR() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const qrCode = searchParams.get('code');
+  const listingId = searchParams.get('listingId');
   const { user } = useAuth();
 
   const [loading, setLoading] = useState(true);
@@ -49,15 +50,30 @@ export default function ScanQR() {
 
       if (qrError) throw qrError;
 
-      // Get active listing
-      const { data: listingData, error: listingError } = await supabase
-        .from('food_listings')
-        .select('*')
-        .eq('vendor_id', qrData.vendor_id)
-        .eq('status', 'active')
-        .maybeSingle();
+      // If listingId is provided, fetch that specific listing
+      // Otherwise, get the active listing from this vendor
+      let listingData;
+      if (listingId) {
+        const { data, error: listingError } = await supabase
+          .from('food_listings')
+          .select('*')
+          .eq('id', listingId)
+          .eq('vendor_id', qrData.vendor_id)
+          .single();
 
-      if (listingError) throw listingError;
+        if (listingError) throw listingError;
+        listingData = data;
+      } else {
+        const { data, error: listingError } = await supabase
+          .from('food_listings')
+          .select('*')
+          .eq('vendor_id', qrData.vendor_id)
+          .eq('status', 'active')
+          .maybeSingle();
+
+        if (listingError) throw listingError;
+        listingData = data;
+      }
 
       if (!listingData) {
         toast.error('No active listing available from this vendor');

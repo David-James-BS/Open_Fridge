@@ -11,6 +11,9 @@ import VendorAuth from "./pages/auth/VendorAuth";
 import OrganisationAuth from "./pages/auth/OrganisationAuth";
 import AdminAuth from "./pages/auth/AdminAuth";
 import ConsumerDashboard from "./pages/consumer/ConsumerDashboard";
+import ConsumerProfile from "./pages/consumer/ConsumerProfile";
+import ListingDetail from "./pages/consumer/ListingDetail";
+import NotificationSettings from "./pages/consumer/NotificationSettings";
 import OrganisationDashboard from "./pages/organisation/OrganisationDashboard";
 import VendorDashboard from "./pages/vendor/VendorDashboard";
 import VendorProfile from "./pages/vendor/VendorProfile";
@@ -39,6 +42,9 @@ const App = () => (
             <Route path="/auth/organisation" element={<OrganisationAuth />} />
             <Route path="/admin" element={<AdminAuth />} />
             <Route path="/consumer/dashboard" element={<ConsumerDashboard />} />
+            <Route path="/consumer/profile" element={<ConsumerProfile />} />
+            <Route path="/consumer/notifications-settings" element={<NotificationSettings />} />
+            <Route path="/listing/:id" element={<ListingDetail />} />
             <Route path="/organisation/dashboard" element={<OrganisationDashboard />} />
             <Route path="/vendor/dashboard" element={<VendorDashboard />} />
             <Route path="/vendor/profile" element={<VendorProfile />} />

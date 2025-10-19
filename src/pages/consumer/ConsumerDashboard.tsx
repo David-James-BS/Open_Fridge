@@ -6,9 +6,10 @@ import { FoodListing, CuisineType, DietaryType } from '@/types/food';
 import { FoodListingCard } from '@/components/food/FoodListingCard';
 import { FilterSidebar } from '@/components/food/FilterSidebar';
 import { DeleteAccountDialog } from '@/components/shared/DeleteAccountDialog';
+import { NotificationsDropdown } from '@/components/layout/NotificationsDropdown';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Loader2, LogOut, Trash2 } from 'lucide-react';
+import { Loader2, LogOut, Trash2, User, Settings } from 'lucide-react';
 
 interface FilterState {
   search: string;
@@ -143,6 +144,13 @@ export default function ConsumerDashboard() {
         <h1 className="text-2xl font-bold">Available Food</h1>
         <div className="flex items-center gap-2">
           <FilterSidebar filters={filters} onFilterChange={setFilters} />
+          <NotificationsDropdown />
+          <Button variant="ghost" size="icon" onClick={() => navigate('/consumer/notifications-settings')}>
+            <Settings className="h-5 w-5" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => navigate('/consumer/profile')}>
+            <User className="h-5 w-5" />
+          </Button>
           <Button variant="ghost" size="sm" onClick={signOut}>
             <LogOut className="h-4 w-4 mr-2" />
             Sign Out
@@ -169,7 +177,7 @@ export default function ConsumerDashboard() {
               <FoodListingCard
                 key={listing.id}
                 listing={listing}
-                onClick={() => navigate(`/consumer/listing/${listing.id}`)}
+                onClick={() => navigate(`/listing/${listing.id}`)}
               />
             ))}
           </div>

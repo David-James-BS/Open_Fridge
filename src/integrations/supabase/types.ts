@@ -207,6 +207,7 @@ export type Database = {
           email: string
           id: string
           location: string | null
+          name: string | null
           phone: string | null
           stall_name: string | null
           updated_at: string
@@ -216,6 +217,7 @@ export type Database = {
           email: string
           id: string
           location?: string | null
+          name?: string | null
           phone?: string | null
           stall_name?: string | null
           updated_at?: string
@@ -225,6 +227,7 @@ export type Database = {
           email?: string
           id?: string
           location?: string | null
+          name?: string | null
           phone?: string | null
           stall_name?: string | null
           updated_at?: string
@@ -303,6 +306,27 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      vendor_followers: {
+        Row: {
+          consumer_id: string
+          created_at: string
+          id: string
+          vendor_id: string
+        }
+        Insert: {
+          consumer_id: string
+          created_at?: string
+          id?: string
+          vendor_id: string
+        }
+        Update: {
+          consumer_id?: string
+          created_at?: string
+          id?: string
+          vendor_id?: string
         }
         Relationships: []
       }
