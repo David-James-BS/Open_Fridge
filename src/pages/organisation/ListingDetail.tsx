@@ -23,6 +23,7 @@ export default function OrganisationListingDetail() {
   const [vendorInfo, setVendorInfo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [existingReservation, setExistingReservation] = useState<any>(null);
+  const [totalReservedPortions, setTotalReservedPortions] = useState(0);
   const [portionsToReserve, setPortionsToReserve] = useState(1);
   const [reserving, setReserving] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
@@ -38,6 +39,7 @@ export default function OrganisationListingDetail() {
     setIsMobile(isMobileDevice());
     fetchListing();
     checkExistingReservation();
+    fetchTotalReservedPortions();
 
     // Real-time subscription
     if (id) {
@@ -109,12 +111,35 @@ export default function OrganisationListingDetail() {
     }
   };
 
+  const fetchTotalReservedPortions = async () => {
+    if (!id) return;
+
+    try {
+      // Calculate total reserved portions (not yet collected)
+      const { data, error } = await supabase
+        .from('reservations')
+        .select('portions_reserved')
+        .eq('listing_id', id)
+        .eq('collected', false);
+
+      if (error) throw error;
+
+      const total = data?.reduce((sum, res) => sum + res.portions_reserved, 0) || 0;
+      setTotalReservedPortions(total);
+    } catch (error) {
+      console.error('Error fetching reserved portions:', error);
+    }
+  };
+
   const handleReserve = async () => {
     if (!listing || !user) return;
 
-    const maxAllowed = Math.floor(listing.remaining_portions * MAX_RESERVE_PERCENTAGE);
+    // Calculate available portions (remaining - already reserved by others)
+    const availableToReserve = listing.remaining_portions - totalReservedPortions;
+    const maxAllowed = Math.floor(availableToReserve * MAX_RESERVE_PERCENTAGE);
+    
     if (portionsToReserve > maxAllowed) {
-      toast.error(`You can only reserve up to ${maxAllowed} portions (85% of available)`);
+      toast.error(`You can only reserve up to ${maxAllowed} portions (85% of available: ${availableToReserve})`);
       return;
     }
 
@@ -129,7 +154,7 @@ export default function OrganisationListingDetail() {
       // Simulate payment processing
       await new Promise(resolve => setTimeout(resolve, 1500));
 
-      // Create reservation with paid deposit
+      // Create reservation with paid deposit (does NOT decrease remaining_portions)
       const { data, error } = await supabase
         .from('reservations')
         .insert({
@@ -144,19 +169,9 @@ export default function OrganisationListingDetail() {
 
       if (error) throw error;
 
-      // Update listing remaining portions
-      const { error: updateError } = await supabase
-        .from('food_listings')
-        .update({
-          remaining_portions: listing.remaining_portions - portionsToReserve
-        })
-        .eq('id', listing.id);
-
-      if (updateError) throw updateError;
-
-      toast.success('Reservation successful! Deposit paid.');
+      toast.success('Reservation successful! Deposit paid. Scan QR code to collect.');
       setExistingReservation(data);
-      fetchListing();
+      fetchTotalReservedPortions();
     } catch (error: any) {
       console.error('Error making reservation:', error);
       toast.error(error.message || 'Failed to make reservation');
@@ -240,8 +255,14 @@ export default function OrganisationListingDetail() {
     );
   }
 
-  const percentageLeft = (listing.remaining_portions / listing.total_portions) * 100;
-  const maxAllowed = Math.floor(listing.remaining_portions * MAX_RESERVE_PERCENTAGE);
+  const availableToReserve = listing.remaining_portions - totalReservedPortions;
+  const maxAllowed = Math.floor(availableToReserve * MAX_RESERVE_PERCENTAGE);
+  const collectedPortions = listing.total_portions - listing.remaining_portions;
+  
+  // Calculate percentages for the progress bar
+  const collectedPercentage = (collectedPortions / listing.total_portions) * 100;
+  const reservedPercentage = (totalReservedPortions / listing.total_portions) * 100;
+  const availablePercentage = (availableToReserve / listing.total_portions) * 100;
 
   return (
     <div className="container max-w-4xl mx-auto py-6 px-4">
@@ -312,19 +333,53 @@ export default function OrganisationListingDetail() {
           <div className="border-t pt-6 space-y-4">
             <div>
               <div className="flex justify-between text-sm mb-2">
-                <span className="text-muted-foreground">Available Portions</span>
+                <span className="text-muted-foreground">Portion Status</span>
                 <span className="font-medium">
-                  {listing.remaining_portions} of {listing.total_portions}
+                  {availableToReserve} available / {totalReservedPortions} reserved / {collectedPortions} collected
                 </span>
               </div>
-              <Progress value={percentageLeft} className="h-3" />
+              
+              {/* Multi-color progress bar */}
+              <div className="h-3 w-full bg-muted rounded-full overflow-hidden flex">
+                <div 
+                  className="bg-green-500 transition-all" 
+                  style={{ width: `${availablePercentage}%` }}
+                  title={`${availableToReserve} available`}
+                />
+                <div 
+                  className="bg-orange-500 transition-all" 
+                  style={{ width: `${reservedPercentage}%` }}
+                  title={`${totalReservedPortions} reserved`}
+                />
+                <div 
+                  className="bg-gray-400 transition-all" 
+                  style={{ width: `${collectedPercentage}%` }}
+                  title={`${collectedPortions} collected`}
+                />
+              </div>
+              
+              {/* Legend */}
+              <div className="flex flex-wrap gap-4 mt-2 text-xs">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 bg-green-500 rounded" />
+                  <span>Available ({availableToReserve})</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 bg-orange-500 rounded" />
+                  <span>Reserved ({totalReservedPortions})</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 bg-gray-400 rounded" />
+                  <span>Collected ({collectedPortions})</span>
+                </div>
+              </div>
             </div>
 
-            {!existingReservation && listing.status === 'active' && listing.remaining_portions > 0 && (
+            {!existingReservation && listing.status === 'active' && availableToReserve > 0 && (
               <div className="space-y-4 border rounded-lg p-4 bg-muted/50">
                 <div className="space-y-2">
                   <Label htmlFor="portions">
-                    How many portions to reserve? (Max: {maxAllowed} - 85% of available)
+                    How many portions to reserve? (Max: {maxAllowed} - 85% of {availableToReserve} available)
                   </Label>
                   <Input
                     id="portions"
@@ -335,7 +390,7 @@ export default function OrganisationListingDetail() {
                     onChange={(e) => setPortionsToReserve(Math.min(maxAllowed, Math.max(1, parseInt(e.target.value) || 1)))}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Deposit: $50 (flat rate)
+                    Deposit: $50 (flat rate). Portions will be held for you after payment.
                   </p>
                 </div>
                 <Button 
@@ -411,9 +466,13 @@ export default function OrganisationListingDetail() {
               </div>
             )}
 
-            {listing.status === 'active' && listing.remaining_portions === 0 && (
+            {listing.status === 'active' && availableToReserve === 0 && (
               <div className="text-center py-4">
-                <Badge variant="secondary">All portions have been reserved/collected</Badge>
+                <Badge variant="secondary">
+                  {listing.remaining_portions === 0 
+                    ? 'All portions have been collected' 
+                    : 'All available portions have been reserved'}
+                </Badge>
               </div>
             )}
           </div>

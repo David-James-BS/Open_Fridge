@@ -119,7 +119,7 @@ Deno.serve(async (req) => {
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     } else if (role === 'charitable_organisation') {
-      // Mark reservation as collected
+      // Mark reservation as collected and decrease remaining_portions
       if (!reservationId) {
         throw new Error('Reservation ID is required for organizations');
       }
@@ -144,6 +144,11 @@ Deno.serve(async (req) => {
         throw new Error('Deposit must be paid before collection');
       }
 
+      // Check if enough portions available
+      if (activeListing.remaining_portions < reservation.portions_reserved) {
+        throw new Error('Not enough portions available');
+      }
+
       // Mark as collected
       const { error: updateReservationError } = await supabase
         .from('reservations')
@@ -158,7 +163,20 @@ Deno.serve(async (req) => {
         throw updateReservationError;
       }
 
-      console.log('Reservation collected successfully');
+      // Decrease remaining_portions NOW (when actually collected)
+      const { error: updatePortionsError } = await supabaseAdmin
+        .from('food_listings')
+        .update({
+          remaining_portions: activeListing.remaining_portions - reservation.portions_reserved,
+        })
+        .eq('id', activeListing.id);
+
+      if (updatePortionsError) {
+        console.error('Error updating portions:', updatePortionsError);
+        throw updatePortionsError;
+      }
+
+      console.log('Reservation collected successfully, portions decreased');
 
       return new Response(
         JSON.stringify({

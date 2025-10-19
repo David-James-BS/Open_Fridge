@@ -88,11 +88,11 @@ export default function OrganisationDashboard() {
     try {
       setLoading(true);
       
+      // Fetch ALL active listings (charity priority is handled by priority_until)
       const { data, error } = await supabase
         .from('food_listings')
         .select('*')
         .eq('status', 'active')
-        .eq('available_for_charity', true)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
