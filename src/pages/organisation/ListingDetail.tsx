@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
+import { PortionStatusBar } from '@/components/food/PortionStatusBar';
 import { QRScanner } from '@/components/scanner/QRScanner';
 import { isMobileDevice } from '@/utils/deviceDetection';
 import { toast } from 'sonner';
@@ -41,9 +41,9 @@ export default function OrganisationListingDetail() {
     checkExistingReservation();
     fetchTotalReservedPortions();
 
-    // Real-time subscription
+    // Real-time subscription for listings
     if (id) {
-      const channel = supabase
+      const listingChannel = supabase
         .channel(`org_listing_detail_${id}`)
         .on(
           'postgres_changes',
@@ -59,8 +59,27 @@ export default function OrganisationListingDetail() {
         )
         .subscribe();
 
+      // Real-time subscription for reservations
+      const reservationChannel = supabase
+        .channel(`org_reservations_${id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'reservations',
+            filter: `listing_id=eq.${id}`
+          },
+          () => {
+            checkExistingReservation();
+            fetchTotalReservedPortions();
+          }
+        )
+        .subscribe();
+
       return () => {
-        supabase.removeChannel(channel);
+        supabase.removeChannel(listingChannel);
+        supabase.removeChannel(reservationChannel);
       };
     }
   }, [id, user]);
@@ -331,49 +350,11 @@ export default function OrganisationListingDetail() {
           </div>
 
           <div className="border-t pt-6 space-y-4">
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-muted-foreground">Portion Status</span>
-                <span className="font-medium">
-                  {availableToReserve} available / {totalReservedPortions} reserved / {collectedPortions} collected
-                </span>
-              </div>
-              
-              {/* Multi-color progress bar */}
-              <div className="h-3 w-full bg-muted rounded-full overflow-hidden flex">
-                <div 
-                  className="bg-green-500 transition-all" 
-                  style={{ width: `${availablePercentage}%` }}
-                  title={`${availableToReserve} available`}
-                />
-                <div 
-                  className="bg-orange-500 transition-all" 
-                  style={{ width: `${reservedPercentage}%` }}
-                  title={`${totalReservedPortions} reserved`}
-                />
-                <div 
-                  className="bg-gray-400 transition-all" 
-                  style={{ width: `${collectedPercentage}%` }}
-                  title={`${collectedPortions} collected`}
-                />
-              </div>
-              
-              {/* Legend */}
-              <div className="flex flex-wrap gap-4 mt-2 text-xs">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-3 bg-green-500 rounded" />
-                  <span>Available ({availableToReserve})</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-3 bg-orange-500 rounded" />
-                  <span>Reserved ({totalReservedPortions})</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-3 bg-gray-400 rounded" />
-                  <span>Collected ({collectedPortions})</span>
-                </div>
-              </div>
-            </div>
+            <PortionStatusBar
+              totalPortions={listing.total_portions}
+              remainingPortions={listing.remaining_portions}
+              reservedPortions={totalReservedPortions}
+            />
 
             {!existingReservation && listing.status === 'active' && availableToReserve > 0 && (
               <div className="space-y-4 border rounded-lg p-4 bg-muted/50">
@@ -387,7 +368,12 @@ export default function OrganisationListingDetail() {
                     min="1"
                     max={maxAllowed}
                     value={portionsToReserve}
-                    onChange={(e) => setPortionsToReserve(Math.min(maxAllowed, Math.max(1, parseInt(e.target.value) || 1)))}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 1;
+                      if (value >= 1 && value <= maxAllowed) {
+                        setPortionsToReserve(value);
+                      }
+                    }}
                   />
                   <p className="text-xs text-muted-foreground">
                     Deposit: $50 (flat rate). Portions will be held for you after payment.

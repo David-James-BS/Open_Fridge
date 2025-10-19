@@ -1,9 +1,11 @@
+import { useState, useEffect } from 'react';
 import { FoodListing } from '@/types/food';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Clock, MapPin, Utensils } from 'lucide-react';
 import { format } from 'date-fns';
-import { Progress } from '@/components/ui/progress';
+import { supabase } from '@/integrations/supabase/client';
+import { PortionStatusBar } from './PortionStatusBar';
 
 interface FoodListingCardProps {
   listing: FoodListing;
@@ -12,8 +14,46 @@ interface FoodListingCardProps {
 }
 
 export function FoodListingCard({ listing, onClick, showPriorityBadge }: FoodListingCardProps) {
-  const percentageLeft = (listing.remaining_portions / listing.total_portions) * 100;
+  const [reservedPortions, setReservedPortions] = useState(0);
   const isPriority = listing.priority_until && new Date(listing.priority_until) > new Date();
+
+  useEffect(() => {
+    fetchReservedPortions();
+
+    // Real-time updates for reservations
+    const channel = supabase
+      .channel(`listing_${listing.id}_reservations`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'reservations',
+          filter: `listing_id=eq.${listing.id}`,
+        },
+        () => {
+          fetchReservedPortions();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [listing.id]);
+
+  const fetchReservedPortions = async () => {
+    const { data, error } = await supabase
+      .from('reservations')
+      .select('portions_reserved')
+      .eq('listing_id', listing.id)
+      .eq('collected', false);
+
+    if (!error && data) {
+      const total = data.reduce((sum, r) => sum + r.portions_reserved, 0);
+      setReservedPortions(total);
+    }
+  };
 
   return (
     <Card 
@@ -61,15 +101,11 @@ export function FoodListingCard({ listing, onClick, showPriorityBadge }: FoodLis
           </div>
         </div>
 
-        <div className="space-y-1">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Available</span>
-            <span className="font-medium">
-              {listing.remaining_portions} of {listing.total_portions} portions
-            </span>
-          </div>
-          <Progress value={percentageLeft} className="h-2" />
-        </div>
+        <PortionStatusBar
+          totalPortions={listing.total_portions}
+          remainingPortions={listing.remaining_portions}
+          reservedPortions={reservedPortions}
+        />
 
         <div className="flex flex-wrap gap-2">
           <Badge variant="secondary" className="text-xs">

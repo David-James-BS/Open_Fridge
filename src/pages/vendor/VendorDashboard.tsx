@@ -4,9 +4,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { FoodListing } from '@/types/food';
 import { DeleteAccountDialog } from '@/components/shared/DeleteAccountDialog';
+import { PortionStatusBar } from '@/components/food/PortionStatusBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
@@ -19,14 +19,15 @@ export default function VendorDashboard() {
   const [activeListing, setActiveListing] = useState<FoodListing | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [reservedPortions, setReservedPortions] = useState(0);
 
   useEffect(() => {
     if (!user) return;
 
     fetchActiveListing();
 
-    // Set up realtime subscription
-    const channel = supabase
+    // Set up realtime subscription for listings
+    const listingsChannel = supabase
       .channel('vendor_listings')
       .on(
         'postgres_changes',
@@ -43,9 +44,36 @@ export default function VendorDashboard() {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(listingsChannel);
     };
   }, [user]);
+
+  useEffect(() => {
+    if (!activeListing) return;
+
+    fetchReservedPortions();
+
+    // Set up realtime subscription for reservations
+    const reservationsChannel = supabase
+      .channel('vendor_reservations')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'reservations',
+          filter: `listing_id=eq.${activeListing.id}`,
+        },
+        () => {
+          fetchReservedPortions();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(reservationsChannel);
+    };
+  }, [activeListing]);
 
   const fetchActiveListing = async () => {
     if (!user) return;
@@ -69,6 +97,21 @@ export default function VendorDashboard() {
     }
   };
 
+  const fetchReservedPortions = async () => {
+    if (!activeListing) return;
+
+    const { data, error } = await supabase
+      .from('reservations')
+      .select('portions_reserved')
+      .eq('listing_id', activeListing.id)
+      .eq('collected', false);
+
+    if (!error && data) {
+      const total = data.reduce((sum, r) => sum + r.portions_reserved, 0);
+      setReservedPortions(total);
+    }
+  };
+
   const handleCancelListing = async () => {
     if (!activeListing || !user) return;
 
@@ -88,10 +131,6 @@ export default function VendorDashboard() {
       toast.error('Failed to cancel listing');
     }
   };
-
-  const percentageLeft = activeListing
-    ? (activeListing.remaining_portions / activeListing.total_portions) * 100
-    : 0;
 
   if (loading) {
     return (
@@ -190,15 +229,11 @@ export default function VendorDashboard() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Remaining Portions</span>
-                <span className="font-medium">
-                  {activeListing.remaining_portions} of {activeListing.total_portions}
-                </span>
-              </div>
-              <Progress value={percentageLeft} className="h-3" />
-            </div>
+            <PortionStatusBar
+              totalPortions={activeListing.total_portions}
+              remainingPortions={activeListing.remaining_portions}
+              reservedPortions={reservedPortions}
+            />
 
             <div className="flex flex-wrap gap-2">
               <Badge variant="secondary">{activeListing.cuisine}</Badge>

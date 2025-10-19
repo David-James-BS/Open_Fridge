@@ -32,7 +32,9 @@ Deno.serve(async (req) => {
 
     const { qrCode, portionsToCollect, reservationId } = await req.json();
 
-    if (!portionsToCollect || portionsToCollect < 1 || portionsToCollect > 5) {
+    // For consumers, validate portions
+    // For organizations, portionsToCollect is not used (use reservation data instead)
+    if (portionsToCollect !== undefined && (portionsToCollect < 1 || portionsToCollect > 5)) {
       throw new Error('Portions must be between 1 and 5');
     }
 
