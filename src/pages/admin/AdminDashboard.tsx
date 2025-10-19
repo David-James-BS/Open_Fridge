@@ -4,8 +4,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LicenseReviewCard } from '@/components/admin/LicenseReviewCard';
+import { DeleteAccountDialog } from '@/components/shared/DeleteAccountDialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Shield } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Shield, LogOut, Trash2 } from 'lucide-react';
 
 interface License {
   id: string;
@@ -28,9 +30,10 @@ interface LicenseWithProfile extends License {
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const { user, role, loading: authLoading } = useAuth();
+  const { user, role, loading: authLoading, signOut } = useAuth();
   const [licenses, setLicenses] = useState<LicenseWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading && (!user || role !== 'admin' as any)) {
@@ -123,13 +126,25 @@ export default function AdminDashboard() {
       <div className="max-w-7xl mx-auto space-y-6">
         <Card>
           <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10">
-                <Shield className="h-6 w-6 text-primary" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10">
+                  <Shield className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <CardTitle className="text-2xl">Admin Dashboard</CardTitle>
+                  <CardDescription>Manage license requests and approvals</CardDescription>
+                </div>
               </div>
-              <div>
-                <CardTitle className="text-2xl">Admin Dashboard</CardTitle>
-                <CardDescription>Manage license requests and approvals</CardDescription>
+              <div className="flex gap-2">
+                <Button variant="ghost" size="sm" onClick={signOut}>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sign Out
+                </Button>
+                <Button variant="destructive" size="sm" onClick={() => setDeleteDialogOpen(true)}>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Account
+                </Button>
               </div>
             </div>
           </CardHeader>
@@ -235,6 +250,12 @@ export default function AdminDashboard() {
             )}
           </TabsContent>
         </Tabs>
+        
+        <DeleteAccountDialog 
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          userRole="admin"
+        />
       </div>
     </div>
   );

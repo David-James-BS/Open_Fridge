@@ -3,19 +3,21 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { FoodListing } from '@/types/food';
+import { DeleteAccountDialog } from '@/components/shared/DeleteAccountDialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Loader2, Plus, QrCode, Edit, X, Clock, MapPin } from 'lucide-react';
+import { Loader2, Plus, QrCode, Edit, X, Clock, MapPin, LogOut, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function VendorDashboard() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const [activeListing, setActiveListing] = useState<FoodListing | null>(null);
   const [loading, setLoading] = useState(true);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -215,7 +217,21 @@ export default function VendorDashboard() {
         >
           View History
         </Button>
+        <Button variant="ghost" onClick={signOut}>
+          <LogOut className="h-4 w-4 mr-2" />
+          Sign Out
+        </Button>
+        <Button variant="destructive" onClick={() => setDeleteDialogOpen(true)}>
+          <Trash2 className="h-4 w-4 mr-2" />
+          Delete Account
+        </Button>
       </div>
+      
+      <DeleteAccountDialog 
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        userRole="vendor"
+      />
     </div>
   );
 }

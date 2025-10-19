@@ -33,16 +33,19 @@ serve(async (req) => {
       }
     );
 
-    // Check if admin already exists
-    const { data: existingRoles } = await supabaseAdmin
+    // Check if we already have 5 admin accounts
+    const { data: existingAdmins, error: countError } = await supabaseAdmin
       .from('user_roles')
-      .select('id')
-      .eq('role', 'admin')
-      .limit(1);
+      .select('id', { count: 'exact' })
+      .eq('role', 'admin');
 
-    if (existingRoles && existingRoles.length > 0) {
+    if (countError) {
+      throw countError;
+    }
+
+    if (existingAdmins && existingAdmins.length >= 5) {
       return new Response(
-        JSON.stringify({ error: 'Admin user already exists' }),
+        JSON.stringify({ error: 'Cannot create admin account. Maximum of 5 admin accounts allowed.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }

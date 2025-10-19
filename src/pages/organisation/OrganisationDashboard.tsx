@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { FoodListing, CuisineType, DietaryType } from '@/types/food';
 import { FoodListingCard } from '@/components/food/FoodListingCard';
 import { FilterSidebar } from '@/components/food/FilterSidebar';
+import { DeleteAccountDialog } from '@/components/shared/DeleteAccountDialog';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Loader2, Clock } from 'lucide-react';
+import { Loader2, Clock, LogOut, Trash2 } from 'lucide-react';
 import { differenceInSeconds } from 'date-fns';
 
 interface FilterState {
@@ -19,11 +21,13 @@ const ITEMS_PER_PAGE = 10;
 
 export default function OrganisationDashboard() {
   const navigate = useNavigate();
+  const { signOut } = useAuth();
   const [listings, setListings] = useState<FoodListing[]>([]);
   const [displayedListings, setDisplayedListings] = useState<FoodListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [priorityTimeLeft, setPriorityTimeLeft] = useState<{ [key: string]: number }>({});
   const [filters, setFilters] = useState<FilterState>(() => {
     const saved = localStorage.getItem('organisationFilters');
@@ -162,7 +166,17 @@ export default function OrganisationDashboard() {
     <div className="container max-w-4xl mx-auto py-6 px-4 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Available Food</h1>
-        <FilterSidebar filters={filters} onFilterChange={setFilters} />
+        <div className="flex items-center gap-2">
+          <FilterSidebar filters={filters} onFilterChange={setFilters} />
+          <Button variant="ghost" size="sm" onClick={signOut}>
+            <LogOut className="h-4 w-4 mr-2" />
+            Sign Out
+          </Button>
+          <Button variant="destructive" size="sm" onClick={() => setDeleteDialogOpen(true)}>
+            <Trash2 className="h-4 w-4 mr-2" />
+            Delete Account
+          </Button>
+        </div>
       </div>
 
       {paginatedListings.length === 0 ? (
@@ -213,6 +227,12 @@ export default function OrganisationDashboard() {
           )}
         </>
       )}
+      
+      <DeleteAccountDialog 
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        userRole="charitable_organisation"
+      />
     </div>
   );
 }

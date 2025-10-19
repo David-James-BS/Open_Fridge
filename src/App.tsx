@@ -14,7 +14,6 @@ import ConsumerDashboard from "./pages/consumer/ConsumerDashboard";
 import OrganisationDashboard from "./pages/organisation/OrganisationDashboard";
 import VendorDashboard from "./pages/vendor/VendorDashboard";
 import AdminDashboard from "./pages/admin/AdminDashboard";
-import CreateAdminAccount from "./pages/admin/CreateAdminAccount";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,7 +32,6 @@ const App = () => (
             <Route path="/auth/vendor" element={<VendorAuth />} />
             <Route path="/auth/organisation" element={<OrganisationAuth />} />
             <Route path="/admin" element={<AdminAuth />} />
-            <Route path="/admin/create" element={<CreateAdminAccount />} />
             <Route path="/consumer/dashboard" element={<ConsumerDashboard />} />
             <Route path="/organisation/dashboard" element={<OrganisationDashboard />} />
             <Route path="/vendor/dashboard" element={<VendorDashboard />} />
