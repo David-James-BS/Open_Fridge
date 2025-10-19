@@ -54,7 +54,10 @@ export default function EditListing() {
       setListing(data);
       setCuisine(data.cuisine);
       setDietaryInfo(data.dietary_info);
-      setBestBefore(data.best_before.slice(0, 16));
+      const d = new Date(data.best_before);
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const local = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      setBestBefore(local);
     } catch (error) {
       console.error('Error fetching listing:', error);
       toast.error('Failed to load listing');
@@ -84,7 +87,7 @@ export default function EditListing() {
         .update({
           cuisine,
           dietary_info: dietaryInfo.length > 0 ? dietaryInfo : ['none'],
-          best_before: bestBefore,
+          best_before: new Date(bestBefore).toISOString(),
         })
         .eq('id', listing.id);
 

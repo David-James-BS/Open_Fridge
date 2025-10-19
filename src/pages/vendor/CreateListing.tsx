@@ -116,7 +116,7 @@ export default function CreateListing() {
           dietary_info: dietaryInfo.length > 0 ? dietaryInfo : ['none'],
           total_portions: parseInt(formData.totalPortions),
           remaining_portions: parseInt(formData.totalPortions),
-          best_before: formData.bestBefore,
+          best_before: new Date(formData.bestBefore).toISOString(),
           image_url: publicUrl,
           priority_until: priorityUntil,
           available_for_charity: formData.availableForCharity,

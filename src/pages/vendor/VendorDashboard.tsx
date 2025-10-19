@@ -69,13 +69,16 @@ export default function VendorDashboard() {
   };
 
   const handleCancelListing = async () => {
-    if (!activeListing) return;
+    if (!activeListing || !user) return;
 
     try {
       const { error } = await supabase
         .from('food_listings')
         .update({ status: 'cancelled' })
-        .eq('id', activeListing.id);
+        .eq('id', activeListing.id)
+        .eq('vendor_id', user.id)
+        .select()
+        .single();
 
       if (error) throw error;
       
