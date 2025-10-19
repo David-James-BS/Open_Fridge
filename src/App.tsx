@@ -15,6 +15,7 @@ import ConsumerProfile from "./pages/consumer/ConsumerProfile";
 import ListingDetail from "./pages/consumer/ListingDetail";
 import NotificationSettings from "./pages/consumer/NotificationSettings";
 import OrganisationDashboard from "./pages/organisation/OrganisationDashboard";
+import OrganisationListingDetail from "./pages/organisation/ListingDetail";
 import VendorDashboard from "./pages/vendor/VendorDashboard";
 import VendorProfile from "./pages/vendor/VendorProfile";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -46,6 +47,7 @@ const App = () => (
             <Route path="/consumer/notifications-settings" element={<NotificationSettings />} />
             <Route path="/listing/:id" element={<ListingDetail />} />
             <Route path="/organisation/dashboard" element={<OrganisationDashboard />} />
+            <Route path="/organisation/listing/:id" element={<OrganisationListingDetail />} />
             <Route path="/vendor/dashboard" element={<VendorDashboard />} />
             <Route path="/vendor/profile" element={<VendorProfile />} />
             <Route path="/vendor/create-listing" element={<CreateListing />} />

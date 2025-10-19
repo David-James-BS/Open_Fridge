@@ -36,9 +36,9 @@ export default function ConsumerDashboard() {
   useEffect(() => {
     fetchListings();
 
-    // Set up realtime subscription
+    // Set up realtime subscription with more specific filtering
     const channel = supabase
-      .channel('food_listings_changes')
+      .channel('consumer_food_listings_changes')
       .on(
         'postgres_changes',
         {
@@ -46,7 +46,9 @@ export default function ConsumerDashboard() {
           schema: 'public',
           table: 'food_listings',
         },
-        () => {
+        (payload) => {
+          console.log('Listing changed:', payload);
+          // Refetch to get updated data
           fetchListings();
         }
       )

@@ -5,39 +5,44 @@ import { useAuth } from '@/hooks/useAuth';
 import { FoodListing } from '@/types/food';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { QRScanner } from '@/components/scanner/QRScanner';
 import { isMobileDevice } from '@/utils/deviceDetection';
 import { toast } from 'sonner';
-import { Loader2, ArrowLeft, MapPin, Clock, QrCode, Heart, HeartOff, Monitor } from 'lucide-react';
+import { Loader2, ArrowLeft, MapPin, Clock, QrCode, Monitor, DollarSign } from 'lucide-react';
 import { format } from 'date-fns';
 
-export default function ListingDetail() {
+export default function OrganisationListingDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [listing, setListing] = useState<FoodListing | null>(null);
   const [vendorInfo, setVendorInfo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [isFollowing, setIsFollowing] = useState(false);
-  const [followLoading, setFollowLoading] = useState(false);
+  const [existingReservation, setExistingReservation] = useState<any>(null);
+  const [portionsToReserve, setPortionsToReserve] = useState(1);
+  const [reserving, setReserving] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
+  const MAX_RESERVE_PERCENTAGE = 0.85;
+
   useEffect(() => {
     if (!user) {
-      navigate('/auth/consumer');
+      navigate('/auth/organisation');
       return;
     }
     setIsMobile(isMobileDevice());
     fetchListing();
-    checkFollowStatus();
+    checkExistingReservation();
 
-    // Set up realtime subscription for this listing
+    // Real-time subscription
     if (id) {
       const channel = supabase
-        .channel(`listing_detail_${id}`)
+        .channel(`org_listing_detail_${id}`)
         .on(
           'postgres_changes',
           {
@@ -46,8 +51,7 @@ export default function ListingDetail() {
             table: 'food_listings',
             filter: `id=eq.${id}`
           },
-          (payload) => {
-            console.log('Listing updated:', payload);
+          () => {
             fetchListing();
           }
         )
@@ -81,61 +85,83 @@ export default function ListingDetail() {
     } catch (error) {
       console.error('Error fetching listing:', error);
       toast.error('Failed to load listing');
-      navigate('/consumer/dashboard');
+      navigate('/organisation/dashboard');
     } finally {
       setLoading(false);
     }
   };
 
-  const checkFollowStatus = async () => {
-    if (!listing) return;
+  const checkExistingReservation = async () => {
+    if (!id || !user) return;
 
     try {
       const { data } = await supabase
-        .from('vendor_followers')
-        .select('id')
-        .eq('consumer_id', user?.id)
-        .eq('vendor_id', listing.vendor_id)
+        .from('reservations')
+        .select('*')
+        .eq('listing_id', id)
+        .eq('organisation_id', user.id)
+        .eq('collected', false)
         .maybeSingle();
 
-      setIsFollowing(!!data);
+      setExistingReservation(data);
     } catch (error) {
-      console.error('Error checking follow status:', error);
+      console.error('Error checking reservation:', error);
     }
   };
 
-  const handleFollowToggle = async () => {
-    if (!listing) return;
-    setFollowLoading(true);
+  const handleReserve = async () => {
+    if (!listing || !user) return;
+
+    const maxAllowed = Math.floor(listing.remaining_portions * MAX_RESERVE_PERCENTAGE);
+    if (portionsToReserve > maxAllowed) {
+      toast.error(`You can only reserve up to ${maxAllowed} portions (85% of available)`);
+      return;
+    }
+
+    setReserving(true);
 
     try {
-      if (isFollowing) {
-        const { error } = await supabase
-          .from('vendor_followers')
-          .delete()
-          .eq('consumer_id', user?.id)
-          .eq('vendor_id', listing.vendor_id);
+      // Dummy payment processing
+      const depositAmount = portionsToReserve * 2; // $2 per portion
+      
+      toast.info(`Processing deposit payment of $${depositAmount}...`);
+      
+      // Simulate payment processing
+      await new Promise(resolve => setTimeout(resolve, 1500));
 
-        if (error) throw error;
-        setIsFollowing(false);
-        toast.success('Unfollowed vendor');
-      } else {
-        const { error } = await supabase
-          .from('vendor_followers')
-          .insert({
-            consumer_id: user?.id,
-            vendor_id: listing.vendor_id
-          });
+      // Create reservation with paid deposit
+      const { data, error } = await supabase
+        .from('reservations')
+        .insert({
+          listing_id: listing.id,
+          organisation_id: user.id,
+          portions_reserved: portionsToReserve,
+          deposit_amount: depositAmount,
+          deposit_status: 'paid'
+        })
+        .select()
+        .single();
 
-        if (error) throw error;
-        setIsFollowing(true);
-        toast.success('Following vendor - you\'ll be notified of new listings');
-      }
+      if (error) throw error;
+
+      // Update listing remaining portions
+      const { error: updateError } = await supabase
+        .from('food_listings')
+        .update({
+          remaining_portions: listing.remaining_portions - portionsToReserve
+        })
+        .eq('id', listing.id);
+
+      if (updateError) throw updateError;
+
+      toast.success('Reservation successful! Deposit paid.');
+      setExistingReservation(data);
+      fetchListing();
     } catch (error: any) {
-      console.error('Error toggling follow:', error);
-      toast.error(error.message || 'Failed to update follow status');
+      console.error('Error making reservation:', error);
+      toast.error(error.message || 'Failed to make reservation');
     } finally {
-      setFollowLoading(false);
+      setReserving(false);
     }
   };
 
@@ -145,17 +171,21 @@ export default function ListingDetail() {
       return;
     }
 
-    if (!listing) return;
+    if (!existingReservation) {
+      toast.error('You need a reservation to collect food');
+      return;
+    }
+
     setShowScanner(true);
   };
 
   const handleQRCodeScanned = async (scannedText: string) => {
     setShowScanner(false);
 
-    if (!listing) return;
+    if (!listing || !existingReservation) return;
 
     try {
-      // Extract code from a full URL if needed
+      // Extract code from URL if needed
       let scannedCode = scannedText;
       try {
         if (scannedText.startsWith('http')) {
@@ -165,7 +195,7 @@ export default function ListingDetail() {
         }
       } catch {}
 
-      // Verify the scanned QR code belongs to this listing's vendor
+      // Verify QR code matches vendor
       const { data: qrData, error } = await supabase
         .from('vendor_qr_codes')
         .select('vendor_id')
@@ -179,8 +209,8 @@ export default function ListingDetail() {
         return;
       }
 
-      // Navigate to portions input page
-      navigate(`/scan?code=${scannedCode}&listingId=${listing.id}`);
+      // Navigate to collection page
+      navigate(`/scan?code=${scannedCode}&listingId=${listing.id}&reservationId=${existingReservation.id}`);
     } catch (error) {
       console.error('Error validating QR code:', error);
       toast.error('Invalid QR code');
@@ -201,7 +231,7 @@ export default function ListingDetail() {
         <Card>
           <CardContent className="py-12 text-center">
             <p className="text-muted-foreground">Listing not found</p>
-            <Button onClick={() => navigate('/consumer/dashboard')} className="mt-4">
+            <Button onClick={() => navigate('/organisation/dashboard')} className="mt-4">
               Back to Dashboard
             </Button>
           </CardContent>
@@ -211,12 +241,13 @@ export default function ListingDetail() {
   }
 
   const percentageLeft = (listing.remaining_portions / listing.total_portions) * 100;
+  const maxAllowed = Math.floor(listing.remaining_portions * MAX_RESERVE_PERCENTAGE);
 
   return (
     <div className="container max-w-4xl mx-auto py-6 px-4">
       <Button
         variant="ghost"
-        onClick={() => navigate('/consumer/dashboard')}
+        onClick={() => navigate('/organisation/dashboard')}
         className="mb-4"
       >
         <ArrowLeft className="h-4 w-4 mr-2" />
@@ -237,34 +268,10 @@ export default function ListingDetail() {
         </div>
 
         <CardHeader>
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <CardTitle className="text-2xl">{listing.title}</CardTitle>
-              {vendorInfo?.stall_name && (
-                <p className="text-muted-foreground mt-1">by {vendorInfo.stall_name}</p>
-              )}
-            </div>
-            <Button
-              variant={isFollowing ? "outline" : "default"}
-              size="sm"
-              onClick={handleFollowToggle}
-              disabled={followLoading}
-            >
-              {followLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : isFollowing ? (
-                <>
-                  <HeartOff className="h-4 w-4 mr-2" />
-                  Unfollow
-                </>
-              ) : (
-                <>
-                  <Heart className="h-4 w-4 mr-2" />
-                  Follow Vendor
-                </>
-              )}
-            </Button>
-          </div>
+          <CardTitle className="text-2xl">{listing.title}</CardTitle>
+          {vendorInfo?.stall_name && (
+            <p className="text-muted-foreground">by {vendorInfo.stall_name}</p>
+          )}
         </CardHeader>
 
         <CardContent className="space-y-6">
@@ -313,8 +320,54 @@ export default function ListingDetail() {
               <Progress value={percentageLeft} className="h-3" />
             </div>
 
-            {listing.status === 'active' && listing.remaining_portions > 0 && (
-              <>
+            {!existingReservation && listing.status === 'active' && listing.remaining_portions > 0 && (
+              <div className="space-y-4 border rounded-lg p-4 bg-muted/50">
+                <div className="space-y-2">
+                  <Label htmlFor="portions">
+                    How many portions to reserve? (Max: {maxAllowed} - 85% of available)
+                  </Label>
+                  <Input
+                    id="portions"
+                    type="number"
+                    min="1"
+                    max={maxAllowed}
+                    value={portionsToReserve}
+                    onChange={(e) => setPortionsToReserve(Math.min(maxAllowed, Math.max(1, parseInt(e.target.value) || 1)))}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Deposit: ${portionsToReserve * 2} ($2 per portion)
+                  </p>
+                </div>
+                <Button 
+                  onClick={handleReserve} 
+                  className="w-full" 
+                  disabled={reserving || portionsToReserve > maxAllowed}
+                >
+                  {reserving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Processing Payment...
+                    </>
+                  ) : (
+                    <>
+                      <DollarSign className="h-4 w-4 mr-2" />
+                      Reserve & Pay Deposit
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+
+            {existingReservation && !existingReservation.collected && (
+              <div className="space-y-4">
+                <div className="bg-muted p-4 rounded-lg space-y-2">
+                  <p className="text-sm font-medium">Your Reservation</p>
+                  <p className="text-2xl font-bold">{existingReservation.portions_reserved} portions</p>
+                  <p className="text-xs text-muted-foreground">
+                    Deposit paid: ${existingReservation.deposit_amount}
+                  </p>
+                </div>
+                
                 <Button 
                   onClick={handleScanQR} 
                   size="lg" 
@@ -338,7 +391,16 @@ export default function ListingDetail() {
                     Please access this page from a mobile device to scan the vendor's QR code
                   </p>
                 )}
-              </>
+              </div>
+            )}
+
+            {existingReservation?.collected && (
+              <div className="bg-muted p-4 rounded-lg text-center">
+                <Badge variant="secondary">Already Collected</Badge>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Collected on {format(new Date(existingReservation.collected_at), 'PPp')}
+                </p>
+              </div>
             )}
 
             {listing.status !== 'active' && (
@@ -351,7 +413,7 @@ export default function ListingDetail() {
 
             {listing.status === 'active' && listing.remaining_portions === 0 && (
               <div className="text-center py-4">
-                <Badge variant="secondary">All portions have been collected</Badge>
+                <Badge variant="secondary">All portions have been reserved/collected</Badge>
               </div>
             )}
           </div>
