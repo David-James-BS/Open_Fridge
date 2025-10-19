@@ -83,16 +83,21 @@ export default function CreateListing() {
     try {
       // Upload image
       const fileExt = imageFile.name.split('.').pop();
-      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-      const { error: uploadError, data } = await supabase.storage
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
+      const { error: uploadError } = await supabase.storage
         .from('food-images')
-        .upload(fileName, imageFile);
+        .upload(filePath, imageFile, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: imageFile.type,
+        });
 
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage
         .from('food-images')
-        .getPublicUrl(fileName);
+        .getPublicUrl(filePath);
 
       // Calculate priority_until if charity priority is enabled
       const priorityUntil = formData.availableForCharity 
