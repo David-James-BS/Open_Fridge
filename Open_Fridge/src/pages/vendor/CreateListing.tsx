@@ -11,20 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { ArrowLeft, Loader2, Upload } from 'lucide-react';
-import { z } from 'zod';
 
 import { CuisineType, DietaryType } from '@/types/food';
 import { Checkbox } from '@/components/ui/checkbox';
-
-// Validation schema for food listing
-const listingSchema = z.object({
-  title: z.string().trim().min(1, 'Title is required').max(200, 'Title must be less than 200 characters'),
-  description: z.string().trim().max(2000, 'Description must be less than 2000 characters').optional(),
-  location: z.string().trim().min(1, 'Location is required').max(500, 'Location must be less than 500 characters'),
-  cuisine: z.string().min(1, 'Cuisine type is required'),
-  totalPortions: z.number().int().positive('Must be at least 1 portion').max(1000, 'Cannot exceed 1000 portions'),
-  bestBefore: z.string().min(1, 'Best before date is required'),
-});
 
 const CUISINE_OPTIONS: CuisineType[] = [
   'chinese', 'malay', 'indian', 'western', 'japanese', 
@@ -78,22 +67,10 @@ export default function CreateListing() {
     e.preventDefault();
     if (!user) return;
 
-    // Validate form data with zod schema
-    try {
-      listingSchema.parse({
-        title: formData.title,
-        description: formData.description,
-        location: formData.location,
-        cuisine: formData.cuisine,
-        totalPortions: parseInt(formData.totalPortions),
-        bestBefore: formData.bestBefore,
-      });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        const firstError = error.errors[0];
-        toast.error(firstError.message);
-        return;
-      }
+    if (!formData.title || !formData.location || !formData.cuisine || 
+        !formData.totalPortions || !formData.bestBefore) {
+      toast.error('Please fill in all required fields');
+      return;
     }
 
     if (!imageFile) {
