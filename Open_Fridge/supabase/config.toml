@@ -1,6 +1,0 @@
-project_id = "ezezqluumipccctwgtgl"
-
-[functions.generate-vendor-qr]
-[functions.validate-qr-scan]
-[functions.approve-license]
-[functions.process-fake-payment]
