@@ -15,7 +15,7 @@ export function Header() {
         <MobileNav />
         
         <div className="flex-1 flex items-center justify-center md:justify-start">
-          <h1 className="text-lg font-bold">Nourish NextDoor</h1>
+          <h1 className="text-lg font-bold">Open Fridge</h1>
         </div>
 
         {user && (

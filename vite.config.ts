@@ -17,8 +17,8 @@ export default defineConfig(({ mode }) => ({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
-        name: 'Nourish NextDoor',
-        short_name: 'NourishND',
+        name: 'Open Fridge',
+        short_name: 'OpenFridge',
         description: 'Connect consumers, vendors, and charitable organizations to reduce food waste',
         theme_color: '#1a1f2e',
         background_color: '#1a1f2e',

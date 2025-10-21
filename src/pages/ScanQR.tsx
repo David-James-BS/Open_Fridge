@@ -242,21 +242,35 @@ export default function ScanQR() {
             {userRole === 'consumer' && (
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="portions">How many portions? (Max 5)</Label>
+                  <Label htmlFor="portions">How many portions? (1-5, max {Math.min(5, listing.remaining_portions)})</Label>
                   <Input
                     id="portions"
                     type="number"
-                    min="1"
-                    max="5"
+                    min={1}
+                    max={Math.min(5, listing.remaining_portions)}
                     value={portions}
-                    onChange={(e) => setPortions(Math.min(5, Math.max(1, parseInt(e.target.value) || 1)))}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value);
+                      if (!isNaN(value)) {
+                        setPortions(Math.min(Math.min(5, listing.remaining_portions), Math.max(1, value)));
+                      }
+                    }}
+                    onBlur={(e) => {
+                      // Ensure valid value on blur
+                      const value = parseInt(e.target.value);
+                      if (isNaN(value) || value < 1) {
+                        setPortions(1);
+                      } else if (value > Math.min(5, listing.remaining_portions)) {
+                        setPortions(Math.min(5, listing.remaining_portions));
+                      }
+                    }}
                     className="mt-2"
                   />
                 </div>
                 <Button 
                   onClick={handleCollect} 
                   className="w-full" 
-                  disabled={processing || portions > listing.remaining_portions}
+                  disabled={processing || portions > listing.remaining_portions || portions < 1}
                 >
                   {processing ? (
                     <>
