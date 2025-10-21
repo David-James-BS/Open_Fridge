@@ -24,7 +24,7 @@ export default function ScanQR() {
   const [listing, setListing] = useState<FoodListing | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [reservation, setReservation] = useState<any>(null);
-  const [portions, setPortions] = useState(1);
+  const [portionText, setPortionText] = useState('1');
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
@@ -118,9 +118,12 @@ export default function ScanQR() {
     setProcessing(true);
 
     try {
+      const maxAllowed = Math.min(5, listing.remaining_portions);
+      const entered = parseInt(portionText || '1', 10);
+      const portionsVal = userRole === 'consumer' ? Math.min(maxAllowed, Math.max(1, isNaN(entered) ? 1 : entered)) : undefined;
       const body: any = { qrCode };
       if (userRole === 'consumer') {
-        body.portionsToCollect = portions;
+        body.portionsToCollect = portionsVal;
       }
       if (userRole === 'charitable_organisation') {
         body.reservationId = reservation?.id || null;
@@ -178,7 +181,7 @@ export default function ScanQR() {
             <CheckCircle className="h-16 w-16 mx-auto text-green-500" />
             <h2 className="text-2xl font-bold">Successfully Collected!</h2>
             <p className="text-muted-foreground">
-              You have collected {userRole === 'charitable_organisation' ? reservation?.portions_reserved : portions} portion(s)
+              You have collected {userRole === 'charitable_organisation' ? reservation?.portions_reserved : (parseInt(portionText || '1', 10) || 1)} portion(s)
             </p>
             <Button onClick={() => navigate('/')}>
               Return Home
@@ -245,24 +248,27 @@ export default function ScanQR() {
                   <Label htmlFor="portions">How many portions? (1-5, max {Math.min(5, listing.remaining_portions)})</Label>
                   <Input
                     id="portions"
-                    type="number"
-                    min={1}
-                    max={Math.min(5, listing.remaining_portions)}
-                    value={portions}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={portionText}
                     onChange={(e) => {
-                      const value = parseInt(e.target.value);
-                      if (!isNaN(value)) {
-                        setPortions(Math.min(Math.min(5, listing.remaining_portions), Math.max(1, value)));
+                      const raw = e.target.value.replace(/\D/g, '');
+                      if (raw === '') {
+                        setPortionText('');
+                        return;
                       }
+                      const max = Math.min(5, listing.remaining_portions);
+                      const val = parseInt(raw, 10);
+                      const clamped = Math.min(max, Math.max(1, isNaN(val) ? 1 : val));
+                      setPortionText(String(clamped));
                     }}
                     onBlur={(e) => {
-                      // Ensure valid value on blur
-                      const value = parseInt(e.target.value);
-                      if (isNaN(value) || value < 1) {
-                        setPortions(1);
-                      } else if (value > Math.min(5, listing.remaining_portions)) {
-                        setPortions(Math.min(5, listing.remaining_portions));
-                      }
+                      const raw = e.target.value.replace(/\D/g, '');
+                      const max = Math.min(5, listing.remaining_portions);
+                      const val = parseInt(raw || '1', 10);
+                      const clamped = Math.min(max, Math.max(1, isNaN(val) ? 1 : val));
+                      setPortionText(String(clamped));
                     }}
                     className="mt-2"
                   />
@@ -270,7 +276,11 @@ export default function ScanQR() {
                 <Button 
                   onClick={handleCollect} 
                   className="w-full" 
-                  disabled={processing || portions > listing.remaining_portions || portions < 1}
+                  disabled={
+                    processing ||
+                    (parseInt(portionText || '0', 10) || 0) < 1 ||
+                    (parseInt(portionText || '0', 10) || 0) > listing.remaining_portions
+                  }
                 >
                   {processing ? (
                     <>
@@ -278,7 +288,7 @@ export default function ScanQR() {
                       Collecting...
                     </>
                   ) : (
-                    `Collect ${portions} Portion${portions > 1 ? 's' : ''}`
+                    `Collect ${parseInt(portionText || '1', 10) || 1} Portion${(parseInt(portionText || '1', 10) || 1) > 1 ? 's' : ''}`
                   )}
                 </Button>
               </div>
