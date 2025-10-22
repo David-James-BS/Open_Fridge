@@ -79,6 +79,30 @@ Deno.serve(async (req) => {
 
     // Handle based on user role
     if (role === 'consumer') {
+      // Check daily limit (5 portions per consumer per day)
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      
+      const { data: todayCollections, error: collectionsError } = await supabase
+        .from('collections')
+        .select('portions_collected')
+        .eq('consumer_id', user.id)
+        .gte('collected_at', todayStart.toISOString());
+
+      if (collectionsError) {
+        console.error('Error checking daily collections:', collectionsError);
+        throw new Error('Failed to check daily limit');
+      }
+
+      const totalCollectedToday = (todayCollections || []).reduce(
+        (sum, col) => sum + col.portions_collected, 
+        0
+      );
+
+      if (totalCollectedToday + portionsToCollect > 5) {
+        throw new Error(`Daily limit exceeded. You have collected ${totalCollectedToday} portions today. Maximum is 5 portions per day.`);
+      }
+
       // Create collection
       if (activeListing.remaining_portions < portionsToCollect) {
         throw new Error('Not enough portions available');
