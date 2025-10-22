@@ -100,7 +100,7 @@ Deno.serve(async (req) => {
       );
 
       if (totalCollectedToday + portionsToCollect > 5) {
-        throw new Error(`Daily limit exceeded. You have collected ${totalCollectedToday} portions today. Maximum is 5 portions per day.`);
+        throw new Error('Limit reached — you can select a maximum of 5 food items per day');
       }
 
       // Create collection

@@ -133,7 +133,19 @@ export default function ScanQR() {
         body,
       });
 
-      if (error) throw error;
+      // Check for errors in multiple places
+      if (error) {
+        const errorMessage = error.context?.body?.error || error.message || 'Failed to collect food';
+        throw new Error(errorMessage);
+      }
+      
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      if (!data?.success) {
+        throw new Error('Failed to collect food');
+      }
 
       setSuccess(true);
       toast.success('Food collected successfully!');
