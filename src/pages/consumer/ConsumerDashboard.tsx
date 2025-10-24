@@ -33,6 +33,17 @@ export default function ConsumerDashboard() {
     return saved ? JSON.parse(saved) : { search: '', cuisines: [], dietary: [] };
   });
 
+   const [favoritesCount, setFavoritesCount] = useState<number>(() => {
+    try {
+      const raw = localStorage.getItem('followedVendors');
+      if (!raw) return 0;
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed.length : 0;
+    } catch {
+      return 0;
+    }
+  });
+  
   useEffect(() => {
     fetchListings();
 
