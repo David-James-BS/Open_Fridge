@@ -163,7 +163,7 @@ export default function VendorDashboard() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>No, keep listing</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleCancelListing}>Yes, cancel listing</AlertDialogAction>
+                      <AlertDialogAction onClick={handleDeleteListing}>Yes, cancel listing</AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
