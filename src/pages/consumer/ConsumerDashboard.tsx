@@ -9,7 +9,7 @@ import { DeleteAccountDialog } from '@/components/shared/DeleteAccountDialog';
 import { NotificationsDropdown } from '@/components/layout/NotificationsDropdown';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Loader2, LogOut, Trash2, User, Settings } from 'lucide-react';
+import { Loader2, LogOut, Trash2, User, Settings, Heart } from 'lucide-react';
 
 interface FilterState {
   search: string;
@@ -147,6 +147,9 @@ export default function ConsumerDashboard() {
         <h1 className="text-2xl font-bold">Available Food</h1>
         <div className="flex items-center gap-2">
           <FilterSidebar filters={filters} onFilterChange={setFilters} />
+          <Button variant="ghost" size="icon" onClick={() => navigate('/consumer/favorites')}>
+            <Heart className="h-5 w-5" />
+          </Button>
           <NotificationsDropdown />
           <Button variant="ghost" size="icon" onClick={() => navigate('/consumer/notifications-settings')}>
             <Settings className="h-5 w-5" />

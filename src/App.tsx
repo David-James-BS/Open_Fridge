@@ -14,6 +14,7 @@ import ConsumerDashboard from "./pages/consumer/ConsumerDashboard";
 import ConsumerProfile from "./pages/consumer/ConsumerProfile";
 import ListingDetail from "./pages/consumer/ListingDetail";
 import NotificationSettings from "./pages/consumer/NotificationSettings";
+import Favorites from "./pages/consumer/Favorites";
 import OrganisationDashboard from "./pages/organisation/OrganisationDashboard";
 import OrganisationListingDetail from "./pages/organisation/ListingDetail";
 import VendorDashboard from "./pages/vendor/VendorDashboard";
@@ -45,6 +46,7 @@ const App = () => (
             <Route path="/consumer/dashboard" element={<ConsumerDashboard />} />
             <Route path="/consumer/profile" element={<ConsumerProfile />} />
             <Route path="/consumer/notifications-settings" element={<NotificationSettings />} />
+            <Route path="/consumer/favorites" element={<Favorites />} />
             <Route path="/listing/:id" element={<ListingDetail />} />
             <Route path="/organisation/dashboard" element={<OrganisationDashboard />} />
             <Route path="/organisation/listing/:id" element={<OrganisationListingDetail />} />
