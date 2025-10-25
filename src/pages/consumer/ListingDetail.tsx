@@ -1,17 +1,17 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
-import { FoodListing } from '@/types/food';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { PortionStatusBar } from '@/components/food/PortionStatusBar';
-import { QRScanner } from '@/components/scanner/QRScanner';
-import { isMobileDevice } from '@/utils/deviceDetection';
-import { toast } from 'sonner';
-import { Loader2, ArrowLeft, MapPin, Clock, QrCode, Heart, HeartOff, Monitor } from 'lucide-react';
-import { format } from 'date-fns';
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { FoodListing } from "@/types/food";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { PortionStatusBar } from "@/components/food/PortionStatusBar";
+import { QRScanner } from "@/components/scanner/QRScanner";
+import { isMobileDevice } from "@/utils/deviceDetection";
+import { toast } from "sonner";
+import { Loader2, ArrowLeft, MapPin, Clock, QrCode, Heart, HeartOff, Monitor } from "lucide-react";
+import { format } from "date-fns";
 
 export default function ListingDetail() {
   const { id } = useParams();
@@ -27,29 +27,28 @@ export default function ListingDetail() {
 
   useEffect(() => {
     if (!user) {
-      navigate('/auth/consumer');
+      navigate("/auth/consumer");
       return;
     }
     setIsMobile(isMobileDevice());
     fetchListing();
-    checkFollowStatus();
 
     // Set up realtime subscription for this listing
     if (id) {
       const channel = supabase
         .channel(`listing_detail_${id}`)
         .on(
-          'postgres_changes',
+          "postgres_changes",
           {
-            event: '*',
-            schema: 'public',
-            table: 'food_listings',
-            filter: `id=eq.${id}`
+            event: "*",
+            schema: "public",
+            table: "food_listings",
+            filter: `id=eq.${id}`,
           },
           (payload) => {
-            console.log('Listing updated:', payload);
+            console.log("Listing updated:", payload);
             fetchListing();
-          }
+          },
         )
         .subscribe();
 
@@ -59,81 +58,92 @@ export default function ListingDetail() {
     }
   }, [id, user]);
 
+  useEffect(() => {
+    if (listing) {
+      checkFollowStatus();
+    }
+  }, [listing]);
+
   const fetchListing = async () => {
     try {
-      const { data, error } = await supabase
-        .from('food_listings')
-        .select('*')
-        .eq('id', id)
-        .single();
+      const { data, error } = await supabase.from("food_listings").select("*").eq("id", id).single();
 
       if (error) throw error;
       setListing(data);
 
-      // Fetch vendor info
+      // Fetch vendor info with all possible name fields
       const { data: vendorData } = await supabase
-        .from('profiles')
-        .select('stall_name, location, phone')
-        .eq('id', data.vendor_id)
+        .from("profiles")
+        .select("stall_name, name, email, location, phone")
+        .eq("id", data.vendor_id)
         .single();
 
       setVendorInfo(vendorData);
     } catch (error) {
-      console.error('Error fetching listing:', error);
-      toast.error('Failed to load listing');
-      navigate('/consumer/dashboard');
+      console.error("Error fetching listing:", error);
+      toast.error("Failed to load listing");
+      navigate("/consumer/dashboard");
     } finally {
       setLoading(false);
     }
   };
 
   const checkFollowStatus = async () => {
-    if (!listing) return;
+    if (!listing || !user?.id) return;
 
     try {
-      const { data } = await supabase
-        .from('vendor_followers')
-        .select('id')
-        .eq('consumer_id', user?.id)
-        .eq('vendor_id', listing.vendor_id)
+      const { data, error } = await supabase
+        .from("vendor_followers")
+        .select("id")
+        .eq("consumer_id", user.id)
+        .eq("vendor_id", listing.vendor_id)
         .maybeSingle();
+
+      if (error && error.code !== "PGRST116") throw error;
 
       setIsFollowing(!!data);
     } catch (error) {
-      console.error('Error checking follow status:', error);
+      console.error("Error checking follow status:", error);
     }
   };
 
   const handleFollowToggle = async () => {
-    if (!listing) return;
+    if (!listing || !user?.id) return;
     setFollowLoading(true);
 
     try {
       if (isFollowing) {
         const { error } = await supabase
-          .from('vendor_followers')
+          .from("vendor_followers")
           .delete()
-          .eq('consumer_id', user?.id)
-          .eq('vendor_id', listing.vendor_id);
+          .eq("consumer_id", user.id)
+          .eq("vendor_id", listing.vendor_id);
 
         if (error) throw error;
         setIsFollowing(false);
-        toast.success('Unfollowed vendor');
+        toast.success("Unfollowed vendor");
       } else {
-        const { error } = await supabase
-          .from('vendor_followers')
-          .insert({
-            consumer_id: user?.id,
-            vendor_id: listing.vendor_id
-          });
+        const { error } = await supabase.from("vendor_followers").insert({
+          consumer_id: user.id,
+          vendor_id: listing.vendor_id,
+        });
 
-        if (error) throw error;
-        setIsFollowing(true);
-        toast.success('Following vendor - you\'ll be notified of new listings');
+        if (error) {
+          // If duplicate key error, it means already following
+          if (error.code === "23505") {
+            setIsFollowing(true);
+            toast.info("You are already following this vendor");
+          } else {
+            throw error;
+          }
+        } else {
+          setIsFollowing(true);
+          toast.success("Following vendor - you'll be notified of new listings");
+        }
       }
     } catch (error: any) {
-      console.error('Error toggling follow:', error);
-      toast.error(error.message || 'Failed to update follow status');
+      console.error("Error toggling follow:", error);
+      toast.error(error.message || "Failed to update follow status");
     } finally {
       setFollowLoading(false);
     }
@@ -141,7 +151,7 @@ export default function ListingDetail() {
 
   const handleScanQR = () => {
     if (!isMobile) {
-      toast.error('QR code scanning is only available on mobile devices');
+      toast.error("QR code scanning is only available on mobile devices");
       return;
     }
 
@@ -158,32 +168,32 @@ export default function ListingDetail() {
       // Extract code from a full URL if needed
       let scannedCode = scannedText;
       try {
-        if (scannedText.startsWith('http')) {
+        if (scannedText.startsWith("http")) {
           const url = new URL(scannedText);
-          const codeParam = url.searchParams.get('code');
+          const codeParam = url.searchParams.get("code");
           if (codeParam) scannedCode = codeParam;
         }
       } catch {}
 
       // Verify the scanned QR code belongs to this listing's vendor
       const { data: qrData, error } = await supabase
-        .from('vendor_qr_codes')
-        .select('vendor_id')
-        .eq('qr_code', scannedCode)
+        .from("vendor_qr_codes")
+        .select("vendor_id")
+        .eq("qr_code", scannedCode)
         .single();
 
       if (error) throw error;
 
       if (qrData.vendor_id !== listing.vendor_id) {
-        toast.error('This QR code does not match the selected listing');
+        toast.error("This QR code does not match the selected listing");
         return;
       }
 
       // Navigate to portions input page
       navigate(`/scan?code=${scannedCode}&listingId=${listing.id}`);
     } catch (error) {
-      console.error('Error validating QR code:', error);
-      toast.error('Invalid QR code');
+      console.error("Error validating QR code:", error);
+      toast.error("Invalid QR code");
     }
   };
 
@@ -201,7 +211,7 @@ export default function ListingDetail() {
         <Card>
           <CardContent className="py-12 text-center">
             <p className="text-muted-foreground">Listing not found</p>
-            <Button onClick={() => navigate('/consumer/dashboard')} className="mt-4">
+            <Button onClick={() => navigate("/consumer/dashboard")} className="mt-4">
               Back to Dashboard
             </Button>
           </CardContent>
@@ -214,11 +224,7 @@ export default function ListingDetail() {
 
   return (
     <div className="container max-w-4xl mx-auto py-6 px-4">
-      <Button
-        variant="ghost"
-        onClick={() => navigate('/consumer/dashboard')}
-        className="mb-4"
-      >
+      <Button variant="ghost" onClick={() => navigate("/consumer/dashboard")} className="mb-4">
         <ArrowLeft className="h-4 w-4 mr-2" />
         Back to Listings
       </Button>
@@ -226,11 +232,7 @@ export default function ListingDetail() {
       <Card>
         <div className="relative h-64 md:h-96">
           {listing.image_url ? (
-            <img
-              src={listing.image_url}
-              alt={listing.title}
-              className="w-full h-full object-cover rounded-t-lg"
-            />
+            <img src={listing.image_url} alt={listing.title} className="w-full h-full object-cover rounded-t-lg" />
           ) : (
             <div className="w-full h-full bg-muted rounded-t-lg" />
           )}
@@ -240,8 +242,10 @@ export default function ListingDetail() {
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <CardTitle className="text-2xl">{listing.title}</CardTitle>
-              {vendorInfo?.stall_name && (
-                <p className="text-muted-foreground mt-1">by {vendorInfo.stall_name}</p>
+              {vendorInfo && (
+                <p className="text-muted-foreground mt-1">
+                  by {vendorInfo.stall_name || vendorInfo.name || vendorInfo.email?.split("@")[0] || "Vendor"}
+                </p>
               )}
             </div>
             <Button
@@ -268,9 +272,7 @@ export default function ListingDetail() {
         </CardHeader>
 
         <CardContent className="space-y-6">
-          {listing.description && (
-            <p className="text-muted-foreground">{listing.description}</p>
-          )}
+          {listing.description && <p className="text-muted-foreground">{listing.description}</p>}
 
           <div className="grid gap-3">
             <div className="flex items-center gap-2">
@@ -280,7 +282,7 @@ export default function ListingDetail() {
 
             <div className="flex items-center gap-2">
               <Clock className="h-5 w-5 text-muted-foreground" />
-              <span>Best before: {format(new Date(listing.best_before), 'PPp')}</span>
+              <span>Best before: {format(new Date(listing.best_before), "PPp")}</span>
             </div>
 
             {vendorInfo?.phone && (
@@ -297,7 +299,7 @@ export default function ListingDetail() {
             </Badge>
             {listing.dietary_info.map((diet) => (
               <Badge key={diet} variant="outline" className="text-sm">
-                {diet.replace('_', ' ')}
+                {diet.replace("_", " ")}
               </Badge>
             ))}
           </div>
@@ -309,14 +311,9 @@ export default function ListingDetail() {
               reservedPortions={listing.reserved_portions || 0}
             />
 
-            {listing.status === 'active' && listing.remaining_portions > 0 && (
+            {listing.status === "active" && listing.remaining_portions > 0 && (
               <>
-                <Button 
-                  onClick={handleScanQR} 
-                  size="lg" 
-                  className="w-full"
-                  disabled={!isMobile}
-                >
+                <Button onClick={handleScanQR} size="lg" className="w-full" disabled={!isMobile}>
                   {isMobile ? (
                     <>
                       <QrCode className="h-5 w-5 mr-2" />
@@ -337,15 +334,13 @@ export default function ListingDetail() {
               </>
             )}
 
-            {listing.status !== 'active' && (
+            {listing.status !== "active" && (
               <div className="text-center py-4">
-                <Badge variant="secondary">
-                  This listing is {listing.status}
-                </Badge>
+                <Badge variant="secondary">This listing is {listing.status}</Badge>
               </div>
             )}
 
-            {listing.status === 'active' && listing.remaining_portions === 0 && (
+            {listing.status === "active" && listing.remaining_portions === 0 && (
               <div className="text-center py-4">
                 <Badge variant="secondary">All portions have been collected</Badge>
               </div>
@@ -354,12 +349,7 @@ export default function ListingDetail() {
         </CardContent>
       </Card>
 
-      {showScanner && (
-        <QRScanner 
-          onScan={handleQRCodeScanned}
-          onClose={() => setShowScanner(false)}
-        />
-      )}
+      {showScanner && <QRScanner onScan={handleQRCodeScanned} onClose={() => setShowScanner(false)} />}
     </div>
   );
 }
