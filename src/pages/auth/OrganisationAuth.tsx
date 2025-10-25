@@ -31,6 +31,8 @@ const OrganisationAuth = () => {
   const [resetSecurityAnswer, setResetSecurityAnswer] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [fetchedSecurityQuestion, setFetchedSecurityQuestion] = useState("");
+  const [questionFetched, setQuestionFetched] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -158,6 +160,45 @@ const OrganisationAuth = () => {
     }
   };
 
+  const handleFetchSecurityQuestion = async () => {
+    if (!resetEmail) {
+      toast({
+        title: "Email required",
+        description: "Please enter your email address",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('security_question')
+        .eq('email', resetEmail)
+        .single();
+
+      if (error || !profile?.security_question) {
+        throw new Error("No security question found for this email");
+      }
+
+      setFetchedSecurityQuestion(profile.security_question);
+      setQuestionFetched(true);
+      toast({
+        title: "Security question found",
+        description: "Please answer your security question",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Could not find security question for this email",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -188,6 +229,8 @@ const OrganisationAuth = () => {
       setResetSecurityAnswer("");
       setNewPassword("");
       setConfirmNewPassword("");
+      setFetchedSecurityQuestion("");
+      setQuestionFetched(false);
     } catch (error: any) {
       if (error.message.includes("Incorrect security answer")) {
         toast({
@@ -196,6 +239,12 @@ const OrganisationAuth = () => {
           variant: "destructive",
         });
         setShowForgotPassword(false);
+        setResetEmail("");
+        setResetSecurityAnswer("");
+        setNewPassword("");
+        setConfirmNewPassword("");
+        setFetchedSecurityQuestion("");
+        setQuestionFetched(false);
       } else {
         toast({
           title: "Password reset failed",
@@ -287,46 +336,73 @@ const OrganisationAuth = () => {
                   id="reset-email"
                   type="email"
                   value={resetEmail}
-                  onChange={(e) => setResetEmail(e.target.value)}
+                  onChange={(e) => {
+                    setResetEmail(e.target.value);
+                    setQuestionFetched(false);
+                    setFetchedSecurityQuestion("");
+                  }}
                   required
+                  disabled={questionFetched}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="reset-security-answer">Security Answer</Label>
-                <Input
-                  id="reset-security-answer"
-                  type="text"
-                  value={resetSecurityAnswer}
-                  onChange={(e) => setResetSecurityAnswer(e.target.value)}
-                  placeholder="Answer to your security question"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="new-password">New Password</Label>
-                <Input
-                  id="new-password"
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  required
-                  minLength={6}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirm-new-password">Confirm New Password</Label>
-                <Input
-                  id="confirm-new-password"
-                  type="password"
-                  value={confirmNewPassword}
-                  onChange={(e) => setConfirmNewPassword(e.target.value)}
-                  required
-                  minLength={6}
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Resetting..." : "Reset Password"}
-              </Button>
+              
+              {!questionFetched && (
+                <Button 
+                  type="button" 
+                  onClick={handleFetchSecurityQuestion} 
+                  className="w-full" 
+                  disabled={loading || !resetEmail}
+                >
+                  {loading ? "Checking..." : "Continue"}
+                </Button>
+              )}
+
+              {questionFetched && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="security-question-display">Your Security Question</Label>
+                    <div className="p-3 bg-muted rounded-md text-sm">
+                      {fetchedSecurityQuestion}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="reset-security-answer">Your Answer</Label>
+                    <Input
+                      id="reset-security-answer"
+                      type="text"
+                      value={resetSecurityAnswer}
+                      onChange={(e) => setResetSecurityAnswer(e.target.value)}
+                      placeholder="Enter your answer"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="new-password">New Password</Label>
+                    <Input
+                      id="new-password"
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      required
+                      minLength={6}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm-new-password">Confirm New Password</Label>
+                    <Input
+                      id="confirm-new-password"
+                      type="password"
+                      value={confirmNewPassword}
+                      onChange={(e) => setConfirmNewPassword(e.target.value)}
+                      required
+                      minLength={6}
+                    />
+                  </div>
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? "Resetting..." : "Reset Password"}
+                  </Button>
+                </>
+              )}
             </form>
           </Card>
         </div>
