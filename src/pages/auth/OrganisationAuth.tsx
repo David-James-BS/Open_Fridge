@@ -14,7 +14,7 @@ const SECURITY_QUESTIONS = [
   "What is your favorite food as a child?",
   "What is the name of the first school you attended?",
   "What is your best friend's name?",
-  "What is your favorite book?"
+  "What is your favorite book?",
 ];
 
 const OrganisationAuth = () => {
@@ -39,14 +39,12 @@ const OrganisationAuth = () => {
   }, []);
 
   const checkLicenseStatus = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { data } = await supabase
-      .from("licenses")
-      .select("status")
-      .eq("user_id", user.id)
-      .single();
+    const { data } = await supabase.from("licenses").select("status").eq("user_id", user.id).single();
 
     if (data) {
       setLicenseStatus(data.status);
@@ -69,23 +67,26 @@ const OrganisationAuth = () => {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/`
-        }
+          emailRedirectTo: `${window.location.origin}/`,
+        },
       });
 
       if (error) throw error;
 
       if (data.user) {
         // Update profile with security question
-        await supabase.from("profiles").update({
-          security_question: securityQuestion,
-          security_answer: securityAnswer.toLowerCase()
-        }).eq("id", data.user.id);
+        await supabase
+          .from("profiles")
+          .update({
+            security_question: securityQuestion,
+            security_answer: securityAnswer.toLowerCase(),
+          })
+          .eq("id", data.user.id);
 
         // Add user role
         await supabase.from("user_roles").insert({
           user_id: data.user.id,
-          role: "charitable_organisation"
+          role: "charitable_organisation",
         });
 
         toast({
@@ -99,7 +100,7 @@ const OrganisationAuth = () => {
       toast({
         title: "Sign up failed",
         description: error.message,
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -113,7 +114,7 @@ const OrganisationAuth = () => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
-        password
+        password,
       });
 
       if (error) throw error;
@@ -130,11 +131,7 @@ const OrganisationAuth = () => {
         throw new Error("This account is not registered as a charitable organisation");
       }
 
-      const { data: license } = await supabase
-        .from("licenses")
-        .select("status")
-        .eq("user_id", data.user.id)
-        .single();
+      const { data: license } = await supabase.from("licenses").select("status").eq("user_id", data.user.id).single();
 
       if (!license) {
         setShowLicenseUpload(true);
@@ -154,7 +151,7 @@ const OrganisationAuth = () => {
       toast({
         title: "Sign in failed",
         description: error.message,
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -170,12 +167,12 @@ const OrganisationAuth = () => {
         throw new Error("Passwords do not match");
       }
 
-      const { data, error } = await supabase.functions.invoke('reset-password-with-security', {
+      const { data, error } = await supabase.functions.invoke("reset-password-with-security", {
         body: {
           email: resetEmail,
           securityAnswer: resetSecurityAnswer,
-          newPassword
-        }
+          newPassword,
+        },
       });
 
       if (error) throw error;
@@ -196,14 +193,14 @@ const OrganisationAuth = () => {
         toast({
           title: "Incorrect answer",
           description: "The answer is incorrect.",
-          variant: "destructive"
+          variant: "destructive",
         });
         setShowForgotPassword(false);
       } else {
         toast({
           title: "Password reset failed",
           description: error.message,
-          variant: "destructive"
+          variant: "destructive",
         });
       }
     } finally {
@@ -216,29 +213,35 @@ const OrganisationAuth = () => {
     setLoading(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const fileExt = licenseFile.name.split('.').pop();
+      const fileExt = licenseFile.name.split(".").pop();
       const filePath = `${user.id}/license.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('licenses')
+        .from("licenses")
         .upload(filePath, licenseFile, { upsert: true });
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('licenses')
-        .getPublicUrl(filePath);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("licenses").getPublicUrl(filePath);
 
-      const { error: dbError } = await supabase
-        .from("licenses")
-        .upsert({
+      const { error: dbError } = await supabase.from("licenses").upsert(
+        {
           user_id: user.id,
           file_url: publicUrl,
-          status: "pending"
-        });
+          status: "pending",
+          rejection_reason: null,
+          reviewed_at: null,
+          reviewed_by: null,
+        },
+        { onConflict: "user_id" },
+      );
 
       if (dbError) throw dbError;
 
@@ -252,7 +255,7 @@ const OrganisationAuth = () => {
       toast({
         title: "Upload failed",
         description: error.message,
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -263,11 +266,7 @@ const OrganisationAuth = () => {
     return (
       <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-4">
         <div className="w-full max-w-md space-y-6">
-          <Button
-            variant="ghost"
-            onClick={() => setShowForgotPassword(false)}
-            className="mb-4"
-          >
+          <Button variant="ghost" onClick={() => setShowForgotPassword(false)} className="mb-4">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to sign in
           </Button>
@@ -345,13 +344,11 @@ const OrganisationAuth = () => {
           <div>
             <h2 className="text-2xl font-bold mb-2">License Under Review</h2>
             <p className="text-muted-foreground">
-              Your organisation license is currently being reviewed by our administrators.
-              You'll receive a notification once it's approved.
+              Your organisation license is currently being reviewed by our administrators. You'll receive a notification
+              once it's approved.
             </p>
           </div>
-          <Button onClick={() => supabase.auth.signOut().then(() => navigate("/"))}>
-            Sign Out
-          </Button>
+          <Button onClick={() => supabase.auth.signOut().then(() => navigate("/"))}>Sign Out</Button>
         </Card>
       </div>
     );
