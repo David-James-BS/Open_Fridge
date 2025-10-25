@@ -16,7 +16,7 @@ import {
   AlertDialogTitle,
   AlertDialogDescription,
   AlertDialogFooter,
-  AlertDialogDelete,
+  AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
@@ -85,7 +85,7 @@ export default function VendorDashboard() {
     try {
       const { error } = await supabase
         .from("food_listings")
-        .update({ status: "deleted" })
+        .update({ status: "cancelled" })
         .eq("id", activeListing.id)
         .eq("vendor_id", user.id);
 
@@ -162,7 +162,7 @@ export default function VendorDashboard() {
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogDelete>No, keep listing</AlertDialogDelete>
+                      <AlertDialogCancel>No, keep listing</AlertDialogCancel>
                       <AlertDialogAction onClick={handleDeleteListing}>Yes, delete listing</AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
