@@ -5,17 +5,32 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Heart, Upload, Clock } from "lucide-react";
 
+const SECURITY_QUESTIONS = [
+  "What is your favorite food as a child?",
+  "What is the name of the first school you attended?",
+  "What is your best friend's name?",
+  "What is your favorite book?"
+];
+
 const OrganisationAuth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [securityQuestion, setSecurityQuestion] = useState("");
+  const [securityAnswer, setSecurityAnswer] = useState("");
   const [loading, setLoading] = useState(false);
   const [showLicenseUpload, setShowLicenseUpload] = useState(false);
   const [licenseFile, setLicenseFile] = useState<File | null>(null);
   const [licenseStatus, setLicenseStatus] = useState<string | null>(null);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetSecurityAnswer, setResetSecurityAnswer] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -46,6 +61,10 @@ const OrganisationAuth = () => {
     setLoading(true);
 
     try {
+      if (!securityQuestion || !securityAnswer) {
+        throw new Error("Please select a security question and provide an answer");
+      }
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -57,7 +76,12 @@ const OrganisationAuth = () => {
       if (error) throw error;
 
       if (data.user) {
-        // Profile is created automatically by trigger
+        // Update profile with security question
+        await supabase.from("profiles").update({
+          security_question: securityQuestion,
+          security_answer: securityAnswer.toLowerCase()
+        }).eq("id", data.user.id);
+
         // Add user role
         await supabase.from("user_roles").insert({
           user_id: data.user.id,
@@ -137,6 +161,56 @@ const OrganisationAuth = () => {
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      if (newPassword !== confirmNewPassword) {
+        throw new Error("Passwords do not match");
+      }
+
+      const { data, error } = await supabase.functions.invoke('reset-password-with-security', {
+        body: {
+          email: resetEmail,
+          securityAnswer: resetSecurityAnswer,
+          newPassword
+        }
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast({
+        title: "Password reset successful!",
+        description: "You can now sign in with your new password.",
+      });
+
+      setShowForgotPassword(false);
+      setResetEmail("");
+      setResetSecurityAnswer("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+    } catch (error: any) {
+      if (error.message.includes("Incorrect security answer")) {
+        toast({
+          title: "Incorrect answer",
+          description: "The answer is incorrect.",
+          variant: "destructive"
+        });
+        setShowForgotPassword(false);
+      } else {
+        toast({
+          title: "Password reset failed",
+          description: error.message,
+          variant: "destructive"
+        });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleLicenseUpload = async () => {
     if (!licenseFile) return;
     setLoading(true);
@@ -184,6 +258,82 @@ const OrganisationAuth = () => {
       setLoading(false);
     }
   };
+
+  if (showForgotPassword) {
+    return (
+      <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-4">
+        <div className="w-full max-w-md space-y-6">
+          <Button
+            variant="ghost"
+            onClick={() => setShowForgotPassword(false)}
+            className="mb-4"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to sign in
+          </Button>
+
+          <div className="text-center space-y-2">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary shadow-primary">
+              <Heart className="h-8 w-8 text-primary-foreground" />
+            </div>
+            <h1 className="text-3xl font-bold">Reset Password</h1>
+            <p className="text-muted-foreground">Answer your security question to reset your password</p>
+          </div>
+
+          <Card className="p-6">
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="reset-email">Email</Label>
+                <Input
+                  id="reset-email"
+                  type="email"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="reset-security-answer">Security Answer</Label>
+                <Input
+                  id="reset-security-answer"
+                  type="text"
+                  value={resetSecurityAnswer}
+                  onChange={(e) => setResetSecurityAnswer(e.target.value)}
+                  placeholder="Answer to your security question"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="new-password">New Password</Label>
+                <Input
+                  id="new-password"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                  minLength={6}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirm-new-password">Confirm New Password</Label>
+                <Input
+                  id="confirm-new-password"
+                  type="password"
+                  value={confirmNewPassword}
+                  onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  required
+                  minLength={6}
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Resetting..." : "Reset Password"}
+              </Button>
+            </form>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   if (licenseStatus === "pending") {
     return (
@@ -315,6 +465,14 @@ const OrganisationAuth = () => {
                     required
                   />
                 </div>
+                <Button
+                  type="button"
+                  variant="link"
+                  className="px-0 text-sm"
+                  onClick={() => setShowForgotPassword(true)}
+                >
+                  Forgot password?
+                </Button>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? "Signing in..." : "Sign In"}
                 </Button>
@@ -342,6 +500,32 @@ const OrganisationAuth = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     minLength={6}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="security-question">Security Question</Label>
+                  <Select value={securityQuestion} onValueChange={setSecurityQuestion} required>
+                    <SelectTrigger id="security-question">
+                      <SelectValue placeholder="Select a security question" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SECURITY_QUESTIONS.map((question) => (
+                        <SelectItem key={question} value={question}>
+                          {question}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="security-answer">Security Answer</Label>
+                  <Input
+                    id="security-answer"
+                    type="text"
+                    value={securityAnswer}
+                    onChange={(e) => setSecurityAnswer(e.target.value)}
+                    placeholder="Your answer"
+                    required
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>

@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { email, password } = await req.json();
+    const { email, password, securityQuestion, securityAnswer } = await req.json();
 
     if (!email || !password) {
       return new Response(
@@ -77,6 +77,21 @@ serve(async (req) => {
       // Cleanup: delete the user if role assignment fails
       await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
       throw roleError;
+    }
+
+    // Update profile with security question if provided
+    if (securityQuestion && securityAnswer) {
+      const { error: profileError } = await supabaseAdmin
+        .from('profiles')
+        .update({
+          security_question: securityQuestion,
+          security_answer: securityAnswer
+        })
+        .eq('id', authData.user.id);
+
+      if (profileError) {
+        console.error('Error updating profile with security question:', profileError);
+      }
     }
 
     return new Response(
