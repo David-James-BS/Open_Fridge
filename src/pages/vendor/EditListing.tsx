@@ -1,25 +1,40 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { toast } from 'sonner';
-import { ArrowLeft, Loader2 } from 'lucide-react';
-import { CuisineType, DietaryType, FoodListing } from '@/types/food';
-import { Checkbox } from '@/components/ui/checkbox';
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
+import { ArrowLeft, Loader2 } from "lucide-react";
+import { CuisineType, DietaryType, FoodListing } from "@/types/food";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const CUISINE_OPTIONS: CuisineType[] = [
-  'chinese', 'malay', 'indian', 'western', 'japanese', 
-  'korean', 'thai', 'vietnamese', 'italian', 'mexican', 'other'
+  "chinese",
+  "malay",
+  "indian",
+  "western",
+  "japanese",
+  "korean",
+  "thai",
+  "vietnamese",
+  "italian",
+  "mexican",
+  "other",
 ];
 
 const DIETARY_OPTIONS: DietaryType[] = [
-  'vegetarian', 'vegan', 'halal', 'kosher', 
-  'gluten_free', 'dairy_free', 'nut_free', 'none'
+  "vegetarian",
+  "vegan",
+  "halal",
+  "kosher",
+  "gluten_free",
+  "dairy_free",
+  "nut_free",
+  "none",
 ];
 
 export default function EditListing() {
@@ -29,10 +44,10 @@ export default function EditListing() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [listing, setListing] = useState<FoodListing | null>(null);
-  
-  const [cuisine, setCuisine] = useState<CuisineType>('chinese');
+
+  const [cuisine, setCuisine] = useState<CuisineType>("chinese");
   const [dietaryInfo, setDietaryInfo] = useState<DietaryType[]>([]);
-  const [bestBefore, setBestBefore] = useState('');
+  const [bestBefore, setBestBefore] = useState("");
 
   useEffect(() => {
     fetchListing();
@@ -43,10 +58,10 @@ export default function EditListing() {
 
     try {
       const { data, error } = await supabase
-        .from('food_listings')
-        .select('*')
-        .eq('id', id)
-        .eq('vendor_id', user.id)
+        .from("food_listings")
+        .select("*")
+        .eq("id", id)
+        .eq("vendor_id", user.id)
         .single();
 
       if (error) throw error;
@@ -55,24 +70,20 @@ export default function EditListing() {
       setCuisine(data.cuisine);
       setDietaryInfo(data.dietary_info);
       const d = new Date(data.best_before);
-      const pad = (n: number) => String(n).padStart(2, '0');
+      const pad = (n: number) => String(n).padStart(2, "0");
       const local = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
       setBestBefore(local);
     } catch (error) {
-      console.error('Error fetching listing:', error);
-      toast.error('Failed to load listing');
-      navigate('/vendor/dashboard');
+      console.error("Error fetching listing:", error);
+      toast.error("Failed to load listing");
+      navigate("/vendor/dashboard");
     } finally {
       setLoading(false);
     }
   };
 
   const handleDietaryToggle = (diet: DietaryType) => {
-    setDietaryInfo(prev => 
-      prev.includes(diet) 
-        ? prev.filter(d => d !== diet)
-        : [...prev, diet]
-    );
+    setDietaryInfo((prev) => (prev.includes(diet) ? prev.filter((d) => d !== diet) : [...prev, diet]));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -83,21 +94,21 @@ export default function EditListing() {
 
     try {
       const { error } = await supabase
-        .from('food_listings')
+        .from("food_listings")
         .update({
           cuisine,
-          dietary_info: dietaryInfo.length > 0 ? dietaryInfo : ['none'],
+          dietary_info: dietaryInfo.length > 0 ? dietaryInfo : ["none"],
           best_before: new Date(bestBefore).toISOString(),
         })
-        .eq('id', listing.id);
+        .eq("id", listing.id);
 
       if (error) throw error;
 
-      toast.success('Listing updated successfully!');
-      navigate('/vendor/dashboard');
+      toast.success("Listing updated successfully!");
+      navigate("/vendor/dashboard");
     } catch (error) {
-      console.error('Error updating listing:', error);
-      toast.error('Failed to update listing');
+      console.error("Error updating listing:", error);
+      toast.error("Failed to update listing");
     } finally {
       setSaving(false);
     }
@@ -115,11 +126,7 @@ export default function EditListing() {
 
   return (
     <div className="container max-w-2xl mx-auto py-6 px-4">
-      <Button
-        variant="ghost"
-        onClick={() => navigate('/vendor/dashboard')}
-        className="mb-4"
-      >
+      <Button variant="ghost" onClick={() => navigate("/vendor/dashboard")} className="mb-4">
         <ArrowLeft className="h-4 w-4 mr-2" />
         Back to Dashboard
       </Button>
@@ -132,10 +139,7 @@ export default function EditListing() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <Label htmlFor="cuisine">Cuisine *</Label>
-              <Select
-                value={cuisine}
-                onValueChange={(value) => setCuisine(value as CuisineType)}
-              >
+              <Select value={cuisine} onValueChange={(value) => setCuisine(value as CuisineType)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -160,7 +164,7 @@ export default function EditListing() {
                       onCheckedChange={() => handleDietaryToggle(diet)}
                     />
                     <Label htmlFor={diet} className="font-normal cursor-pointer">
-                      {diet.replace('_', ' ').charAt(0).toUpperCase() + diet.replace('_', ' ').slice(1)}
+                      {diet.replace("_", " ").charAt(0).toUpperCase() + diet.replace("_", " ").slice(1)}
                     </Label>
                   </div>
                 ))}
@@ -179,13 +183,8 @@ export default function EditListing() {
             </div>
 
             <div className="flex gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate('/vendor/dashboard')}
-                className="flex-1"
-              >
-                Cancel
+              <Button type="button" variant="outline" onClick={() => navigate("/vendor/dashboard")} className="flex-1">
+                Delete
               </Button>
               <Button type="submit" className="flex-1" disabled={saving}>
                 {saving ? (
@@ -194,7 +193,7 @@ export default function EditListing() {
                     Saving...
                   </>
                 ) : (
-                  'Save Changes'
+                  "Save Changes"
                 )}
               </Button>
             </div>
