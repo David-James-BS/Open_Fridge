@@ -181,6 +181,9 @@ export default function OrganisationDashboard() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Available Food</h1>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => navigate('/organisation/favorites')}>
+            Favorites
+          </Button>
           <FilterSidebar filters={filters} onFilterChange={setFilters} />
           <Button variant="ghost" size="sm" onClick={signOut}>
             <LogOut className="h-4 w-4 mr-2" />

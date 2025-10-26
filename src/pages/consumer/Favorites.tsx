@@ -22,27 +22,63 @@ export default function Favorites() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [followedVendors, setFollowedVendors] = useState<FollowedVendor[]>([]);
+  const [userRole, setUserRole] = useState<'consumer' | 'charitable_organisation' | null>(null);
 
   useEffect(() => {
-    if (!user) {
-      navigate("/auth/consumer");
-      return;
-    }
-    fetchFollowedVendors();
+    const initUser = async () => {
+      if (!user) {
+        navigate("/");
+        return;
+      }
+      
+      // Fetch user role
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (roleData?.role === 'consumer' || roleData?.role === 'charitable_organisation') {
+        setUserRole(roleData.role);
+        fetchFollowedVendors(roleData.role);
+      }
+    };
+    
+    initUser();
   }, [user]);
 
-  const fetchFollowedVendors = async () => {
+  const fetchFollowedVendors = async (role: string) => {
     try {
-      const { data, error } = await supabase
-        .from("vendor_followers")
-        .select(
-          `
-          id,
-          vendor_id,
-          created_at
-        `,
-        )
-        .eq("consumer_id", user?.id);
+      let data, error;
+      
+      if (role === 'consumer') {
+        const result = await supabase
+          .from("vendor_followers")
+          .select(
+            `
+            id,
+            vendor_id,
+            created_at
+          `,
+          )
+          .eq("consumer_id", user?.id);
+        data = result.data;
+        error = result.error;
+      } else {
+        // charitable_organisation
+        const result = await supabase
+          .from("organisation_vendor_followers")
+          .select(
+            `
+            id,
+            vendor_id,
+            created_at
+          `,
+          )
+          .eq("organisation_id", user?.id);
+        data = result.data;
+        error = result.error;
+      }
 
       if (error) throw error;
 
@@ -74,7 +110,14 @@ export default function Favorites() {
 
   const handleUnfollow = async (followId: string, stallName: string) => {
     try {
-      const { error } = await supabase.from("vendor_followers").delete().eq("id", followId);
+      let error;
+      if (userRole === 'consumer') {
+        const result = await supabase.from("vendor_followers").delete().eq("id", followId);
+        error = result.error;
+      } else {
+        const result = await supabase.from("organisation_vendor_followers").delete().eq("id", followId);
+        error = result.error;
+      }
 
       if (error) throw error;
 
@@ -94,9 +137,13 @@ export default function Favorites() {
     );
   }
 
+  const getDashboardPath = () => {
+    return userRole === 'consumer' ? '/consumer/dashboard' : '/organisation/dashboard';
+  };
+
   return (
     <div className="container max-w-4xl mx-auto py-6 px-4">
-      <Button variant="ghost" onClick={() => navigate("/consumer/dashboard")} className="mb-4">
+      <Button variant="ghost" onClick={() => navigate(getDashboardPath())} className="mb-4">
         <ArrowLeft className="h-4 w-4 mr-2" />
         Back to Dashboard
       </Button>
@@ -119,7 +166,7 @@ export default function Favorites() {
               <p className="text-sm text-muted-foreground mt-2">
                 Click the "Follow Vendor" button on any food listing to get notified about their new posts
               </p>
-              <Button onClick={() => navigate("/consumer/dashboard")} className="mt-4">
+              <Button onClick={() => navigate(getDashboardPath())} className="mt-4">
                 Browse Food Listings
               </Button>
             </div>

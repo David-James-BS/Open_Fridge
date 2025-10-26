@@ -204,6 +204,27 @@ export type Database = {
           },
         ]
       }
+      organisation_vendor_followers: {
+        Row: {
+          created_at: string
+          id: string
+          organisation_id: string
+          vendor_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          organisation_id: string
+          vendor_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          organisation_id?: string
+          vendor_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
