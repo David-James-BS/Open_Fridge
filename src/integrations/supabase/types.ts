@@ -212,8 +212,10 @@ export type Database = {
           location: string | null
           name: string | null
           phone: string | null
-          security_answer: string | null
-          security_question: string | null
+          security_answer_1_hash: string | null
+          security_answer_2_hash: string | null
+          security_question_1: string | null
+          security_question_2: string | null
           stall_name: string | null
           updated_at: string
         }
@@ -224,8 +226,10 @@ export type Database = {
           location?: string | null
           name?: string | null
           phone?: string | null
-          security_answer?: string | null
-          security_question?: string | null
+          security_answer_1_hash?: string | null
+          security_answer_2_hash?: string | null
+          security_question_1?: string | null
+          security_question_2?: string | null
           stall_name?: string | null
           updated_at?: string
         }
@@ -236,8 +240,10 @@ export type Database = {
           location?: string | null
           name?: string | null
           phone?: string | null
-          security_answer?: string | null
-          security_question?: string | null
+          security_answer_1_hash?: string | null
+          security_answer_2_hash?: string | null
+          security_question_1?: string | null
+          security_question_2?: string | null
           stall_name?: string | null
           updated_at?: string
         }
