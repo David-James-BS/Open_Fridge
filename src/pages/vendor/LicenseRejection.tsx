@@ -159,9 +159,8 @@ export default function LicenseRejection() {
         description: "Your new license has been submitted for review",
       });
 
-      // Sign out and redirect
-      await supabase.auth.signOut();
-      navigate('/vendor/auth');
+      // Redirect to pending page
+      navigate('/vendor/license-pending');
     } catch (error) {
       console.error('Error uploading license:', error);
       toast({

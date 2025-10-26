@@ -26,6 +26,7 @@ import EditListing from "./pages/vendor/EditListing";
 import QRCodePage from "./pages/vendor/QRCodePage";
 import VendorHistory from "./pages/vendor/VendorHistory";
 import LicenseRejection from "./pages/vendor/LicenseRejection";
+import LicensePending from "./pages/vendor/LicensePending";
 import VendorPublicProfile from "./pages/vendor/VendorPublicProfile";
 import ScanQR from "./pages/ScanQR";
 import NotFound from "./pages/NotFound";
@@ -61,6 +62,7 @@ const App = () => (
             <Route path="/vendor/qr-code" element={<QRCodePage />} />
             <Route path="/vendor/history" element={<VendorHistory />} />
             <Route path="/vendor/license-rejection" element={<LicenseRejection />} />
+            <Route path="/vendor/license-pending" element={<LicensePending />} />
             <Route path="/vendor/:vendorId/listings" element={<VendorPublicProfile />} />
             <Route path="/scan" element={<ScanQR />} />
           <Route path="/admin/auth" element={<AdminAuth />} />

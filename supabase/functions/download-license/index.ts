@@ -65,19 +65,6 @@ Deno.serve(async (req) => {
     const urlParts = license.file_url.split('/');
     const filePath = `${license.user_id}/${urlParts[urlParts.length - 1]}`;
 
-    console.log('Downloading file from path:', filePath);
-
-    // Download file from storage
-    const { data: fileData, error: downloadError } = await supabase
-      .storage
-      .from('licenses')
-      .download(filePath);
-
-    if (downloadError || !fileData) {
-      console.error('Error downloading file:', downloadError);
-      throw new Error('Failed to download license file');
-    }
-
     console.log('Creating signed URL for license file');
 
     // Generate a signed URL valid for 1 minute
