@@ -20,6 +20,7 @@ import OrganisationListingDetail from "./pages/organisation/ListingDetail";
 import VendorDashboard from "./pages/vendor/VendorDashboard";
 import VendorProfile from "./pages/vendor/VendorProfile";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminProfile from "./pages/admin/AdminProfile";
 import CreateListing from "./pages/vendor/CreateListing";
 import EditListing from "./pages/vendor/EditListing";
 import QRCodePage from "./pages/vendor/QRCodePage";
@@ -62,7 +63,9 @@ const App = () => (
             <Route path="/vendor/license-rejection" element={<LicenseRejection />} />
             <Route path="/vendor/:vendorId/listings" element={<VendorPublicProfile />} />
             <Route path="/scan" element={<ScanQR />} />
-            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/auth" element={<AdminAuth />} />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/profile" element={<AdminProfile />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -122,25 +122,48 @@ export function LicenseReviewCard({ license, userEmail, onStatusChange }: Licens
   };
 
   const handleDownload = async () => {
+    setLoading(true);
     try {
-      const { data, error } = await supabase.storage
-        .from('licenses')
-        .download(license.file_url);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not authenticated');
 
-      if (error) throw error;
+      const response = await supabase.functions.invoke('download-license', {
+        body: { licenseId: license.id },
+      });
 
-      const url = URL.createObjectURL(data);
+      if (response.error) throw response.error;
+
+      const { fileData, contentType } = response.data;
+      
+      // Convert base64 back to blob
+      const byteCharacters = atob(fileData);
+      const byteArrays = [];
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteArrays.push(byteCharacters.charCodeAt(i));
+      }
+      const blob = new Blob([new Uint8Array(byteArrays)], { type: contentType });
+
+      // Download file
+      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `license-${license.id}`;
       a.click();
       URL.revokeObjectURL(url);
+
+      toast({
+        title: 'Download successful',
+        description: 'License file downloaded successfully',
+      });
     } catch (error: any) {
+      console.error('Download error:', error);
       toast({
         title: 'Download failed',
-        description: error.message,
+        description: error.message || 'Failed to download license file',
         variant: 'destructive',
       });
+    } finally {
+      setLoading(false);
     }
   };
 

@@ -1,24 +1,35 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { AlertCircle, Upload, ArrowLeft } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle, Upload, History, ArrowLeft } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
-const LicenseRejection = () => {
+interface LicenseHistory {
+  id: string;
+  status: string;
+  uploaded_at: string;
+  reviewed_at: string | null;
+  rejection_reason: string | null;
+}
+
+export default function LicenseRejection() {
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [licenseFile, setLicenseFile] = useState<File | null>(null);
+  const [licenseHistory, setLicenseHistory] = useState<LicenseHistory[]>([]);
   const [rejectionData, setRejectionData] = useState<{
-    rejection_reason: string | null;
-    reviewed_at: string | null;
+    reason: string;
+    reviewedAt: string;
   } | null>(null);
-  const navigate = useNavigate();
-  const { toast } = useToast();
 
   useEffect(() => {
     checkLicenseAndAuth();
@@ -27,105 +38,136 @@ const LicenseRejection = () => {
   const checkLicenseAndAuth = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      
       if (!user) {
-        navigate("/auth/vendor");
+        navigate('/vendor/auth');
         return;
       }
 
-      // Check if user has vendor role
-      const { data: userRole } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .eq("role", "vendor")
+      // Check if user is a vendor
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'vendor')
         .single();
 
-      if (!userRole) {
-        navigate("/auth/vendor");
+      if (!roleData) {
+        toast({
+          title: "Unauthorized",
+          description: "You must be a vendor to access this page",
+          variant: "destructive",
+        });
+        navigate('/');
         return;
       }
 
-      // Fetch license details
+      // Fetch all license history
+      const { data: licenses, error: historyError } = await supabase
+        .from('licenses')
+        .select('id, status, uploaded_at, reviewed_at, rejection_reason')
+        .eq('user_id', user.id)
+        .order('uploaded_at', { ascending: false });
+
+      if (historyError) {
+        console.error('Error fetching license history:', historyError);
+      } else if (licenses) {
+        setLicenseHistory(licenses);
+      }
+
+      // Fetch latest license status
       const { data: license, error } = await supabase
-        .from("licenses")
-        .select("status, rejection_reason, reviewed_at")
-        .eq("user_id", user.id)
+        .from('licenses')
+        .select('status, rejection_reason, reviewed_at')
+        .eq('user_id', user.id)
+        .order('uploaded_at', { ascending: false })
+        .limit(1)
         .single();
 
-      if (error || !license) {
-        navigate("/auth/vendor");
+      if (error) {
+        console.error('Error fetching license:', error);
+        navigate('/vendor/auth');
         return;
       }
 
-      // If not rejected, redirect to appropriate page
-      if (license.status === "approved") {
-        navigate("/vendor/dashboard");
-        return;
-      } else if (license.status === "pending") {
-        navigate("/auth/vendor");
-        return;
+      if (license.status === 'rejected') {
+        setRejectionData({
+          reason: license.rejection_reason || 'No reason provided',
+          reviewedAt: license.reviewed_at || '',
+        });
+      } else if (license.status === 'approved') {
+        navigate('/vendor/dashboard');
+      } else if (license.status === 'pending') {
+        toast({
+          title: "License Pending Review",
+          description: "Your license is currently under review",
+        });
+        navigate('/vendor/auth');
       }
-
-      // If rejected, show rejection details
-      setRejectionData({
-        rejection_reason: license.rejection_reason,
-        reviewed_at: license.reviewed_at
-      });
     } catch (error) {
-      console.error("Error checking license:", error);
-      navigate("/auth/vendor");
+      console.error('Error:', error);
+      navigate('/vendor/auth');
     } finally {
       setLoading(false);
     }
   };
 
   const handleLicenseUpload = async () => {
-    if (!licenseFile) return;
-    setUploading(true);
+    if (!licenseFile) {
+      toast({
+        title: "No file selected",
+        description: "Please select a license file to upload",
+        variant: "destructive",
+      });
+      return;
+    }
 
+    setUploading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
+      // Upload new file with timestamp to make it unique
+      const timestamp = Date.now();
       const fileExt = licenseFile.name.split('.').pop();
-      const filePath = `${user.id}/license.${fileExt}`;
-
+      const filePath = `${user.id}/license_${timestamp}.${fileExt}`;
+      
       const { error: uploadError } = await supabase.storage
         .from('licenses')
-        .upload(filePath, licenseFile, { upsert: true });
+        .upload(filePath, licenseFile);
 
       if (uploadError) throw uploadError;
 
+      // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('licenses')
         .getPublicUrl(filePath);
 
-      const { error: dbError } = await supabase
-        .from("licenses")
-        .update({
+      // Create new license record
+      const { error: insertError } = await supabase
+        .from('licenses')
+        .insert({
+          user_id: user.id,
           file_url: publicUrl,
-          status: "pending",
-          rejection_reason: null,
-          reviewed_at: null,
-          reviewed_by: null
-        })
-        .eq("user_id", user.id);
+          status: 'pending'
+        });
 
-      if (dbError) throw dbError;
+      if (insertError) throw insertError;
 
       toast({
-        title: "License uploaded!",
-        description: "Your new license is pending admin approval.",
+        title: "License Uploaded",
+        description: "Your new license has been submitted for review",
       });
 
-      // Redirect to login page
+      // Sign out and redirect
       await supabase.auth.signOut();
-      navigate("/auth/vendor");
-    } catch (error: any) {
+      navigate('/vendor/auth');
+    } catch (error) {
+      console.error('Error uploading license:', error);
       toast({
         title: "Upload failed",
-        description: error.message,
-        variant: "destructive"
+        description: error instanceof Error ? error.message : "Failed to upload license",
+        variant: "destructive",
       });
     } finally {
       setUploading(false);
@@ -134,7 +176,7 @@ const LicenseRejection = () => {
 
   const handleBackToLogin = async () => {
     await supabase.auth.signOut();
-    navigate("/auth/vendor");
+    navigate("/vendor/auth");
   };
 
   if (loading) {
@@ -163,24 +205,28 @@ const LicenseRejection = () => {
             </div>
           </div>
 
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Rejection Reason</AlertTitle>
-            <AlertDescription className="mt-2">
-              {rejectionData?.rejection_reason || "No specific reason provided. Please ensure your license document is clear, valid, and meets all requirements."}
-            </AlertDescription>
-          </Alert>
+          {rejectionData && (
+            <>
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Rejection Reason</AlertTitle>
+                <AlertDescription className="mt-2">
+                  {rejectionData.reason}
+                </AlertDescription>
+              </Alert>
 
-          {rejectionData?.reviewed_at && (
-            <p className="text-sm text-muted-foreground text-center">
-              Reviewed on: {new Date(rejectionData.reviewed_at).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-              })}
-            </p>
+              {rejectionData.reviewedAt && (
+                <p className="text-sm text-muted-foreground text-center">
+                  Reviewed on: {new Date(rejectionData.reviewedAt).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </p>
+              )}
+            </>
           )}
 
           <div className="space-y-4 pt-4 border-t">
@@ -227,9 +273,65 @@ const LicenseRejection = () => {
             </Button>
           </div>
         </Card>
+
+        {licenseHistory.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <History className="h-5 w-5" />
+                License Submission History
+              </CardTitle>
+              <CardDescription>
+                View all your previous license submissions
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {licenseHistory.map((license) => (
+                <Collapsible key={license.id}>
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge variant={
+                          license.status === 'approved' ? 'default' :
+                          license.status === 'rejected' ? 'destructive' :
+                          'secondary'
+                        }>
+                          {license.status}
+                        </Badge>
+                        <span className="text-sm text-muted-foreground">
+                          Uploaded: {new Date(license.uploaded_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                      {license.reviewed_at && (
+                        <p className="text-sm text-muted-foreground">
+                          Reviewed: {new Date(license.reviewed_at).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
+                    {license.rejection_reason && (
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          View Reason
+                        </Button>
+                      </CollapsibleTrigger>
+                    )}
+                  </div>
+                  {license.rejection_reason && (
+                    <CollapsibleContent className="px-4 py-2">
+                      <Alert>
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>
+                          {license.rejection_reason}
+                        </AlertDescription>
+                      </Alert>
+                    </CollapsibleContent>
+                  )}
+                </Collapsible>
+              ))}
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
-};
-
-export default LicenseRejection;
+}

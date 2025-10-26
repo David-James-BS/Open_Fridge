@@ -7,7 +7,7 @@ import { LicenseReviewCard } from '@/components/admin/LicenseReviewCard';
 import { DeleteAccountDialog } from '@/components/shared/DeleteAccountDialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Shield, LogOut, Trash2 } from 'lucide-react';
+import { Shield, LogOut, Trash2, User } from 'lucide-react';
 
 interface License {
   id: string;
@@ -137,6 +137,10 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => navigate('/admin/profile')}>
+                  <User className="h-4 w-4 mr-2" />
+                  Profile
+                </Button>
                 <Button variant="ghost" size="sm" onClick={signOut}>
                   <LogOut className="h-4 w-4 mr-2" />
                   Sign Out
