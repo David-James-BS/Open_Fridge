@@ -78,17 +78,23 @@ Deno.serve(async (req) => {
       throw new Error('Failed to download license file');
     }
 
-    console.log('License file downloaded successfully');
+    console.log('Creating signed URL for license file');
 
-    // Convert blob to base64
-    const arrayBuffer = await fileData.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    // Generate a signed URL valid for 1 minute
+    const { data: signedUrlData, error: signedUrlError } = await supabase
+      .storage
+      .from('licenses')
+      .createSignedUrl(filePath, 60);
+
+    if (signedUrlError || !signedUrlData) {
+      console.error('Error creating signed URL:', signedUrlError);
+      throw new Error('Failed to create download link');
+    }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        fileData: base64,
-        contentType: fileData.type
+        signedUrl: signedUrlData.signedUrl
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

@@ -133,23 +133,14 @@ export function LicenseReviewCard({ license, userEmail, onStatusChange }: Licens
 
       if (response.error) throw response.error;
 
-      const { fileData, contentType } = response.data;
+      const { signedUrl } = response.data;
       
-      // Convert base64 back to blob
-      const byteCharacters = atob(fileData);
-      const byteArrays = [];
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteArrays.push(byteCharacters.charCodeAt(i));
-      }
-      const blob = new Blob([new Uint8Array(byteArrays)], { type: contentType });
-
-      // Download file
-      const url = URL.createObjectURL(blob);
+      // Download using the signed URL
       const a = document.createElement('a');
-      a.href = url;
+      a.href = signedUrl;
       a.download = `license-${license.id}`;
+      a.target = '_blank';
       a.click();
-      URL.revokeObjectURL(url);
 
       toast({
         title: 'Download successful',
