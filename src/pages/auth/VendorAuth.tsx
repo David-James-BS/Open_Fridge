@@ -158,6 +158,8 @@ const VendorAuth = () => {
           description: "Signed in successfully.",
         });
         navigate("/vendor/dashboard");
+      } else if (license.status === "rejected") {
+        navigate("/vendor/license-rejection");
       }
     } catch (error: any) {
       toast({
@@ -366,35 +368,6 @@ const VendorAuth = () => {
     );
   }
 
-  if (licenseStatus === "rejected") {
-    return (
-      <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-4">
-        <Card className="max-w-md p-8 text-center space-y-6">
-          <div>
-            <h2 className="text-2xl font-bold mb-2 text-destructive">License Rejected</h2>
-            <p className="text-muted-foreground mb-4">
-              Unfortunately, your license was not approved. Please upload a new license document.
-            </p>
-          </div>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="license-reupload">Upload New License</Label>
-              <Input
-                id="license-reupload"
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png"
-                onChange={(e) => setLicenseFile(e.target.files?.[0] || null)}
-                className="mt-2"
-              />
-            </div>
-            <Button onClick={handleLicenseUpload} disabled={!licenseFile || loading} className="w-full">
-              {loading ? "Uploading..." : "Upload License"}
-            </Button>
-          </div>
-        </Card>
-      </div>
-    );
-  }
 
   if (showLicenseUpload) {
     return (

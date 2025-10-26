@@ -24,6 +24,7 @@ import CreateListing from "./pages/vendor/CreateListing";
 import EditListing from "./pages/vendor/EditListing";
 import QRCodePage from "./pages/vendor/QRCodePage";
 import VendorHistory from "./pages/vendor/VendorHistory";
+import LicenseRejection from "./pages/vendor/LicenseRejection";
 import ScanQR from "./pages/ScanQR";
 import NotFound from "./pages/NotFound";
 
@@ -56,6 +57,7 @@ const App = () => (
             <Route path="/vendor/edit-listing/:id" element={<EditListing />} />
             <Route path="/vendor/qr-code" element={<QRCodePage />} />
             <Route path="/vendor/history" element={<VendorHistory />} />
+            <Route path="/vendor/license-rejection" element={<LicenseRejection />} />
             <Route path="/scan" element={<ScanQR />} />
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
