@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { SecurityQuestionsSection } from '@/components/profile/SecurityQuestionsSection';
 import { toast } from 'sonner';
 import { Loader2, ArrowLeft, Save } from 'lucide-react';
 
@@ -16,6 +17,8 @@ export default function ConsumerProfile() {
   const [saving, setSaving] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [securityQuestion1, setSecurityQuestion1] = useState('');
+  const [securityQuestion2, setSecurityQuestion2] = useState('');
 
   useEffect(() => {
     if (!user) {
@@ -29,7 +32,7 @@ export default function ConsumerProfile() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('name, email')
+        .select('name, email, security_question_1, security_question_2')
         .eq('id', user?.id)
         .single();
 
@@ -37,6 +40,8 @@ export default function ConsumerProfile() {
 
       setName(data?.name || '');
       setEmail(data?.email || '');
+      setSecurityQuestion1(data?.security_question_1 || '');
+      setSecurityQuestion2(data?.security_question_2 || '');
     } catch (error) {
       console.error('Error fetching profile:', error);
       toast.error('Failed to load profile');
@@ -132,6 +137,12 @@ export default function ConsumerProfile() {
           </form>
         </CardContent>
       </Card>
+
+      <SecurityQuestionsSection 
+        userId={user?.id || ''} 
+        question1={securityQuestion1}
+        question2={securityQuestion2}
+      />
     </div>
   );
 }
