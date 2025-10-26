@@ -131,6 +131,9 @@ export default function VendorDashboard() {
           >
             {hasReachedLimit ? "Max Listings Reached" : "Create New Listing"}
           </Button>
+          <Button onClick={() => navigate("/vendor/qr-code")} variant="default">
+            View QR Code
+          </Button>
           <Button onClick={() => navigate("/vendor/history")} variant="outline">
             View History
           </Button>
