@@ -29,6 +29,7 @@ export default function OrganisationDashboard() {
   const [page, setPage] = useState(1);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [priorityTimeLeft, setPriorityTimeLeft] = useState<{ [key: string]: number }>({});
+  const [vendorNames, setVendorNames] = useState<Record<string, string>>({});
   const [filters, setFilters] = useState<FilterState>(() => {
     const saved = localStorage.getItem('organisationFilters');
     return saved ? JSON.parse(saved) : { search: '', cuisines: [], dietary: [] };
@@ -91,12 +92,25 @@ export default function OrganisationDashboard() {
       // Fetch ALL active listings (charity priority is handled by priority_until)
       const { data, error } = await supabase
         .from('food_listings')
-        .select('*')
+        .select(`
+          *,
+          profiles!food_listings_vendor_id_fkey (
+            stall_name
+          )
+        `)
         .eq('status', 'active')
-        .order('created_at', { ascending: false });
+        .order('updated_at', { ascending: false });
 
       if (error) throw error;
       setListings(data || []);
+
+      // Extract vendor names
+      const namesMap: Record<string, string> = {};
+      data?.forEach((listing: any) => {
+        const vendorName = listing.profiles?.stall_name || "Vendor";
+        namesMap[listing.vendor_id] = vendorName;
+      });
+      setVendorNames(namesMap);
     } catch (error) {
       console.error('Error fetching listings:', error);
       toast.error('Failed to load food listings');
@@ -200,8 +214,10 @@ export default function OrganisationDashboard() {
                 )}
                 <FoodListingCard
                   listing={listing}
+                  vendorName={vendorNames[listing.vendor_id]}
                   onClick={() => navigate(`/organisation/listing/${listing.id}`)}
                   showPriorityBadge={!!priorityTimeLeft[listing.id]}
+                  onVendorClick={() => navigate(`/vendor/${listing.vendor_id}/listings`)}
                 />
               </div>
             ))}

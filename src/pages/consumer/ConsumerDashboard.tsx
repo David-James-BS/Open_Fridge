@@ -73,7 +73,7 @@ export default function ConsumerDashboard() {
         .from("food_listings")
         .select("*")
         .eq("status", "active")
-        .order("created_at", { ascending: false });
+        .order("updated_at", { ascending: false });
 
       // Only show listings where priority window has expired or doesn't exist
       query = query.or("priority_until.is.null,priority_until.lt.now()");
@@ -203,6 +203,7 @@ export default function ConsumerDashboard() {
                 listing={listing}
                 vendorName={vendorNames[listing.vendor_id]}
                 onClick={() => navigate(`/listing/${listing.id}`)}
+                onVendorClick={() => navigate(`/vendor/${listing.vendor_id}/listings`)}
               />
             ))}
           </div>

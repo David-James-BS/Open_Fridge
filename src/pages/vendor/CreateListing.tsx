@@ -74,7 +74,29 @@ export default function CreateListing() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    
+    if (!user) {
+      toast.error('You must be logged in to create a listing');
+      return;
+    }
+
+    // Check if vendor already has 5 active listings
+    const { count, error: countError } = await supabase
+      .from("food_listings")
+      .select("*", { count: "exact", head: true })
+      .eq("vendor_id", user.id)
+      .eq("status", "active");
+
+    if (countError) {
+      console.error("Error checking listing count:", countError);
+      toast.error("Failed to verify listing limit");
+      return;
+    }
+
+    if (count && count >= 5) {
+      toast.error("You can only have 5 active listings at a time");
+      return;
+    }
 
     if (!formData.title || !formData.location || !formData.cuisine || 
         !formData.totalPortions || !formData.bestBefore) {
