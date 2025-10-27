@@ -64,8 +64,6 @@ export default function LicensePending() {
       const latestLicense = licenses?.[0];
       if (latestLicense?.status === 'approved') {
         navigate('/vendor/dashboard');
-      } else if (latestLicense?.status === 'rejected') {
-        navigate('/vendor/license-rejection');
       }
     } catch (error) {
       console.error('Error:', error);

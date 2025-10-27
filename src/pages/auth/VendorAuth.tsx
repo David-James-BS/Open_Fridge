@@ -293,17 +293,14 @@ const VendorAuth = () => {
 
       const { error: dbError } = await supabase
         .from("licenses")
-        .upsert(
-          {
-            user_id: user.id,
-            file_url: publicUrl,
-            status: "pending",
-            rejection_reason: null,
-            reviewed_at: null,
-            reviewed_by: null,
-          },
-          { onConflict: "user_id" }
-        );
+        .insert({
+          user_id: user.id,
+          file_url: publicUrl,
+          status: "pending",
+          rejection_reason: null,
+          reviewed_at: null,
+          reviewed_by: null,
+        });
 
       if (dbError) throw dbError;
 

@@ -279,17 +279,14 @@ const OrganisationAuth = () => {
         data: { publicUrl },
       } = supabase.storage.from("licenses").getPublicUrl(filePath);
 
-      const { error: dbError } = await supabase.from("licenses").upsert(
-        {
-          user_id: user.id,
-          file_url: publicUrl,
-          status: "pending",
-          rejection_reason: null,
-          reviewed_at: null,
-          reviewed_by: null,
-        },
-        { onConflict: "user_id" },
-      );
+      const { error: dbError } = await supabase.from("licenses").insert({
+        user_id: user.id,
+        file_url: publicUrl,
+        status: "pending",
+        rejection_reason: null,
+        reviewed_at: null,
+        reviewed_by: null,
+      });
 
       if (dbError) throw dbError;
 
