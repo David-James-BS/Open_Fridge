@@ -29,10 +29,10 @@ export default function LicensePending() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
-      if (!user) {
-        navigate('/vendor/auth');
-        return;
-      }
+    if (!user) {
+      navigate('/auth/vendor');
+      return;
+    }
 
       // Check if user is a vendor
       const { data: roleData } = await supabase
@@ -67,15 +67,20 @@ export default function LicensePending() {
       }
     } catch (error) {
       console.error('Error:', error);
-      navigate('/vendor/auth');
+      navigate('/auth/vendor');
     } finally {
       setLoading(false);
     }
   };
 
   const handleBackToLogin = async () => {
-    await supabase.auth.signOut();
-    navigate("/vendor/auth");
+    try {
+      await supabase.auth.signOut();
+      window.location.href = '/auth/vendor';
+    } catch (error) {
+      console.error('Logout error:', error);
+      window.location.href = '/auth/vendor';
+    }
   };
 
   if (loading) {

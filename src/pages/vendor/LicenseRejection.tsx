@@ -40,7 +40,7 @@ export default function LicenseRejection() {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        navigate('/vendor/auth');
+        navigate('/auth/vendor');
         return;
       }
 
@@ -86,7 +86,7 @@ export default function LicenseRejection() {
 
       if (error) {
         console.error('Error fetching license:', error);
-        navigate('/vendor/auth');
+        navigate('/auth/vendor');
         return;
       }
 
@@ -102,11 +102,11 @@ export default function LicenseRejection() {
           title: "License Pending Review",
           description: "Your license is currently under review",
         });
-        navigate('/vendor/auth');
+        navigate('/auth/vendor');
       }
     } catch (error) {
       console.error('Error:', error);
-      navigate('/vendor/auth');
+      navigate('/auth/vendor');
     } finally {
       setLoading(false);
     }
@@ -175,8 +175,13 @@ export default function LicenseRejection() {
   };
 
   const handleBackToLogin = async () => {
-    await supabase.auth.signOut();
-    navigate("/vendor/auth");
+    try {
+      await supabase.auth.signOut();
+      window.location.href = '/auth/vendor';
+    } catch (error) {
+      console.error('Logout error:', error);
+      window.location.href = '/auth/vendor';
+    }
   };
 
   if (loading) {
