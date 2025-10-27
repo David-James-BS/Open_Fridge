@@ -28,6 +28,7 @@ import VendorHistory from "./pages/vendor/VendorHistory";
 import LicenseRejection from "./pages/vendor/LicenseRejection";
 import LicensePending from "./pages/vendor/LicensePending";
 import VendorPublicProfile from "./pages/vendor/VendorPublicProfile";
+import OrganisationLicensePending from "./pages/organisation/LicensePending";
 import ScanQR from "./pages/ScanQR";
 import NotFound from "./pages/NotFound";
 
@@ -55,6 +56,7 @@ const App = () => (
             <Route path="/organisation/dashboard" element={<OrganisationDashboard />} />
             <Route path="/organisation/favorites" element={<Favorites />} />
             <Route path="/organisation/listing/:id" element={<OrganisationListingDetail />} />
+            <Route path="/organisation/license-pending" element={<OrganisationLicensePending />} />
             <Route path="/vendor/dashboard" element={<VendorDashboard />} />
             <Route path="/vendor/profile" element={<VendorProfile />} />
             <Route path="/vendor/create-listing" element={<CreateListing />} />

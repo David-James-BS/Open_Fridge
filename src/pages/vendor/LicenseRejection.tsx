@@ -159,7 +159,6 @@ export default function LicenseRejection() {
         description: "Your new license has been submitted for review",
       });
 
-      // Redirect to pending page
       navigate('/vendor/license-pending');
     } catch (error) {
       console.error('Error uploading license:', error);

@@ -266,11 +266,12 @@ const OrganisationAuth = () => {
       if (!user) throw new Error("Not authenticated");
 
       const fileExt = licenseFile.name.split(".").pop();
-      const filePath = `${user.id}/license.${fileExt}`;
+      const timestamp = Date.now();
+      const filePath = `${user.id}/license_${timestamp}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from("licenses")
-        .upload(filePath, licenseFile, { upsert: true });
+        .upload(filePath, licenseFile);
 
       if (uploadError) throw uploadError;
 
@@ -278,17 +279,14 @@ const OrganisationAuth = () => {
         data: { publicUrl },
       } = supabase.storage.from("licenses").getPublicUrl(filePath);
 
-      const { error: dbError } = await supabase.from("licenses").upsert(
-        {
-          user_id: user.id,
-          file_url: publicUrl,
-          status: "pending",
-          rejection_reason: null,
-          reviewed_at: null,
-          reviewed_by: null,
-        },
-        { onConflict: "user_id" },
-      );
+      const { error: dbError } = await supabase.from("licenses").insert({
+        user_id: user.id,
+        file_url: publicUrl,
+        status: "pending",
+        rejection_reason: null,
+        reviewed_at: null,
+        reviewed_by: null,
+      });
 
       if (dbError) throw dbError;
 
@@ -298,6 +296,7 @@ const OrganisationAuth = () => {
       });
 
       setLicenseStatus("pending");
+      navigate('/organisation/license-pending');
     } catch (error: any) {
       toast({
         title: "Upload failed",
