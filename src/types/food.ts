@@ -24,7 +24,6 @@ export type DietaryType =
 export interface FoodListing {
   id: string;
   vendor_id: string;
-  vendorId: string;
   title: string;
   description: string | null;
   location: string;
