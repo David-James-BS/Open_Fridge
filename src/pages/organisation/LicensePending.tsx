@@ -73,8 +73,13 @@ export default function OrganisationLicensePending() {
   };
 
   const handleBackToLogin = async () => {
-    await supabase.auth.signOut();
-    navigate("/auth/organisation");
+    try {
+      await supabase.auth.signOut();
+      window.location.href = '/auth/organisation';
+    } catch (error) {
+      console.error('Logout error:', error);
+      window.location.href = '/auth/organisation';
+    }
   };
 
   if (loading) {
