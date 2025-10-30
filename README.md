@@ -25,6 +25,20 @@ Key goals:
 - Node.js (recommended via nvm)
 - npm or a compatible package manager (pnpm / yarn also supported but examples use npm)
 
+ - Deno (required for running the Supabase/Deno serverless functions locally)
+
+	Recommended installs:
+
+	```sh
+	# macOS (Homebrew)
+	brew install deno
+
+	# or using the official install script
+	curl -fsSL https://deno.land/x/install/install.sh | sh
+	```
+
+	If you use VS Code, install the "Deno" extension (extension id: `denoland.vscode-deno`) and enable it for the workspace so editor features and workspace Deno tooling work correctly.
+
 Install Node with nvm:
 
 ```sh
