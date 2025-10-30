@@ -25,19 +25,19 @@ Key goals:
 - Node.js (recommended via nvm)
 - npm or a compatible package manager (pnpm / yarn also supported but examples use npm)
 
- - Deno (required for running the Supabase/Deno serverless functions locally)
+- Deno (required for running the Supabase/Deno serverless functions locally)
 
-	Recommended installs:
+Recommended installs:
 
-	```sh
-	# macOS (Homebrew)
-	brew install deno
+```sh
+# macOS (Homebrew)
+brew install deno
 
-	# or using the official install script
-	curl -fsSL https://deno.land/x/install/install.sh | sh
-	```
+# or using the official install script
+curl -fsSL https://deno.land/x/install/install.sh | sh
+```
 
-	If you use VS Code, install the "Deno" extension (extension id: `denoland.vscode-deno`) and enable it for the workspace so editor features and workspace Deno tooling work correctly.
+If you use VS Code, install the "Deno" extension (extension id: `denoland.vscode-deno`) and enable it for the workspace so editor features and workspace Deno tooling work correctly.
 
 Install Node with nvm:
 
@@ -92,9 +92,9 @@ This repo includes a `supabase/` folder with serverless functions and DB migrati
 ## Project structure (high-level)
 
 - `src/` — main frontend source
-	- `components/` — React components grouped by feature
-	- `pages/` — route pages
-	- `integrations/supabase/` — Supabase client and helpers
+  - `components/` — React components grouped by feature
+  - `pages/` — route pages
+  - `integrations/supabase/` — Supabase client and helpers
 - `public/` — static assets
 - `supabase/` — serverless functions and DB migrations
 
