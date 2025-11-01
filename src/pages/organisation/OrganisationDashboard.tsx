@@ -8,7 +8,7 @@ import { FilterSidebar } from '@/components/food/FilterSidebar';
 import { DeleteAccountDialog } from '@/components/shared/DeleteAccountDialog';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Loader2, Clock, LogOut, Trash2 } from 'lucide-react';
+import { Loader2, Clock, LogOut, Trash2, User, Heart } from 'lucide-react';
 import { differenceInSeconds } from 'date-fns';
 
 interface FilterState {
@@ -38,7 +38,6 @@ export default function OrganisationDashboard() {
   useEffect(() => {
     fetchListings();
 
-    // Set up realtime subscription
     const channel = supabase
       .channel('org_food_listings')
       .on(
@@ -65,7 +64,6 @@ export default function OrganisationDashboard() {
   }, [filters, listings]);
 
   useEffect(() => {
-    // Update countdown timers
     const interval = setInterval(() => {
       const newTimeLeft: { [key: string]: number } = {};
       listings.forEach((listing) => {
@@ -89,7 +87,6 @@ export default function OrganisationDashboard() {
     try {
       setLoading(true);
       
-      // Fetch ALL active listings (charity priority is handled by priority_until)
       const { data, error } = await supabase
         .from('food_listings')
         .select(`
@@ -104,7 +101,6 @@ export default function OrganisationDashboard() {
       if (error) throw error;
       setListings(data || []);
 
-      // Extract vendor names
       const namesMap: Record<string, string> = {};
       data?.forEach((listing: any) => {
         const vendorName = listing.profiles?.stall_name || "Vendor";
@@ -122,7 +118,6 @@ export default function OrganisationDashboard() {
   const applyFilters = () => {
     let filtered = [...listings];
 
-    // Search filter
     if (filters.search) {
       const searchLower = filters.search.toLowerCase();
       filtered = filtered.filter(
@@ -133,14 +128,12 @@ export default function OrganisationDashboard() {
       );
     }
 
-    // Cuisine filter
     if (filters.cuisines.length > 0) {
       filtered = filtered.filter((listing) =>
         filters.cuisines.includes(listing.cuisine)
       );
     }
 
-    // Dietary filter
     if (filters.dietary.length > 0) {
       filtered = filtered.filter((listing) =>
         filters.dietary.some((diet) => listing.dietary_info.includes(diet))
@@ -181,7 +174,12 @@ export default function OrganisationDashboard() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Available Food</h1>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => navigate('/organisation/profile')}>
+            <User className="h-4 w-4 mr-2" />
+            Profile
+          </Button>
           <Button variant="outline" size="sm" onClick={() => navigate('/organisation/favorites')}>
+            <Heart className="h-4 w-4 mr-2" />
             Favorites
           </Button>
           <FilterSidebar filters={filters} onFilterChange={setFilters} />

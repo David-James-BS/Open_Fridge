@@ -204,6 +204,41 @@ export type Database = {
           },
         ]
       }
+      organisation_collections: {
+        Row: {
+          collected_at: string
+          created_at: string
+          id: string
+          listing_id: string
+          organisation_id: string
+          portions_collected: number
+        }
+        Insert: {
+          collected_at?: string
+          created_at?: string
+          id?: string
+          listing_id: string
+          organisation_id: string
+          portions_collected: number
+        }
+        Update: {
+          collected_at?: string
+          created_at?: string
+          id?: string
+          listing_id?: string
+          organisation_id?: string
+          portions_collected?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organisation_collections_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "food_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organisation_vendor_followers: {
         Row: {
           created_at: string
@@ -227,11 +262,14 @@ export type Database = {
       }
       profiles: {
         Row: {
+          contact_person_name: string | null
           created_at: string
           email: string
           id: string
           location: string | null
           name: string | null
+          organization_description: string | null
+          organization_name: string | null
           phone: string | null
           security_answer_1_hash: string | null
           security_answer_2_hash: string | null
@@ -241,11 +279,14 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          contact_person_name?: string | null
           created_at?: string
           email: string
           id: string
           location?: string | null
           name?: string | null
+          organization_description?: string | null
+          organization_name?: string | null
           phone?: string | null
           security_answer_1_hash?: string | null
           security_answer_2_hash?: string | null
@@ -255,11 +296,14 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          contact_person_name?: string | null
           created_at?: string
           email?: string
           id?: string
           location?: string | null
           name?: string | null
+          organization_description?: string | null
+          organization_name?: string | null
           phone?: string | null
           security_answer_1_hash?: string | null
           security_answer_2_hash?: string | null

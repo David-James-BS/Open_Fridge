@@ -15,12 +15,16 @@ import { hashSecurityAnswer } from "@/utils/securityHash";
 const OrganisationAuth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [organizationName, setOrganizationName] = useState("");
+  const [contactPersonName, setContactPersonName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [securityQuestion1, setSecurityQuestion1] = useState("");
   const [securityAnswer1, setSecurityAnswer1] = useState("");
   const [securityQuestion2, setSecurityQuestion2] = useState("");
   const [securityAnswer2, setSecurityAnswer2] = useState("");
   const [loading, setLoading] = useState(false);
   const [showLicenseUpload, setShowLicenseUpload] = useState(false);
+  const [showProfileForm, setShowProfileForm] = useState(false);
   const [licenseFile, setLicenseFile] = useState<File | null>(null);
   const [licenseStatus, setLicenseStatus] = useState<string | null>(null);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -102,14 +106,52 @@ const OrganisationAuth = () => {
 
         toast({
           title: "Account created!",
-          description: "Please upload your organisation license to continue.",
+          description: "Please complete your organization profile.",
         });
 
-        setShowLicenseUpload(true);
+        setShowProfileForm(true);
       }
     } catch (error: any) {
       toast({
         title: "Sign up failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleProfileSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      if (!organizationName || !contactPersonName || !phoneNumber) {
+        throw new Error("Please fill in all required fields");
+      }
+
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) throw new Error("User not found");
+
+      const { error } = await supabase.from("profiles").update({
+        organization_name: organizationName,
+        contact_person_name: contactPersonName,
+        phone: phoneNumber,
+      }).eq("id", user.id);
+
+      if (error) throw error;
+
+      setShowProfileForm(false);
+      setShowLicenseUpload(true);
+      toast({
+        title: "Profile updated!",
+        description: "Now please upload your organization license.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Profile update failed",
         description: error.message,
         variant: "destructive",
       });
@@ -421,6 +463,62 @@ const OrganisationAuth = () => {
             </form>
           </Card>
         </div>
+      </div>
+    );
+  }
+
+  if (showProfileForm) {
+    return (
+      <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-4">
+        <Card className="max-w-md p-8 space-y-6">
+          <div className="text-center space-y-2">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary shadow-primary">
+              <Heart className="h-8 w-8 text-primary-foreground" />
+            </div>
+            <h2 className="text-2xl font-bold">Complete Your Profile</h2>
+            <p className="text-muted-foreground">
+              Please provide your organization details before uploading your license.
+            </p>
+          </div>
+          <form onSubmit={handleProfileSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="organizationName">Organization Name *</Label>
+              <Input
+                id="organizationName"
+                type="text"
+                value={organizationName}
+                onChange={(e) => setOrganizationName(e.target.value)}
+                required
+                placeholder="Enter organization name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="contactPersonName">Contact Person Name *</Label>
+              <Input
+                id="contactPersonName"
+                type="text"
+                value={contactPersonName}
+                onChange={(e) => setContactPersonName(e.target.value)}
+                required
+                placeholder="Enter contact person name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phoneNumber">Phone Number *</Label>
+              <Input
+                id="phoneNumber"
+                type="tel"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                required
+                placeholder="Enter phone number"
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Saving..." : "Continue to License Upload"}
+            </Button>
+          </form>
+        </Card>
       </div>
     );
   }
