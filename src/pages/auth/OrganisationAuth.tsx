@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,6 +19,7 @@ const OrganisationAuth = () => {
   const [organizationName, setOrganizationName] = useState("");
   const [contactPersonName, setContactPersonName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [organizationDescription, setOrganizationDescription] = useState("");
   const [securityQuestion1, setSecurityQuestion1] = useState("");
   const [securityAnswer1, setSecurityAnswer1] = useState("");
   const [securityQuestion2, setSecurityQuestion2] = useState("");
@@ -127,7 +129,7 @@ const OrganisationAuth = () => {
     setLoading(true);
 
     try {
-      if (!organizationName || !contactPersonName || !phoneNumber) {
+      if (!organizationName || !contactPersonName || !phoneNumber || !organizationDescription) {
         throw new Error("Please fill in all required fields");
       }
 
@@ -139,6 +141,7 @@ const OrganisationAuth = () => {
         organization_name: organizationName,
         contact_person_name: contactPersonName,
         phone: phoneNumber,
+        organization_description: organizationDescription,
       }).eq("id", user.id);
 
       if (error) throw error;
@@ -513,6 +516,21 @@ const OrganisationAuth = () => {
                 required
                 placeholder="Enter phone number"
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="organizationDescription">Organization Description *</Label>
+              <Textarea
+                id="organizationDescription"
+                value={organizationDescription}
+                onChange={(e) => setOrganizationDescription(e.target.value)}
+                required
+                placeholder="Describe your organization's mission and activities"
+                rows={4}
+                className="resize-none"
+              />
+              <p className="text-sm text-muted-foreground">
+                Tell vendors and the community about your organization's charitable work
+              </p>
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Saving..." : "Continue to License Upload"}
