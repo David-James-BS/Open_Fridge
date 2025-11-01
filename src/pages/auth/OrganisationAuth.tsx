@@ -26,7 +26,6 @@ const OrganisationAuth = () => {
   const [securityAnswer2, setSecurityAnswer2] = useState("");
   const [loading, setLoading] = useState(false);
   const [showLicenseUpload, setShowLicenseUpload] = useState(false);
-  const [showProfileForm, setShowProfileForm] = useState(false);
   const [licenseFile, setLicenseFile] = useState<File | null>(null);
   const [licenseStatus, setLicenseStatus] = useState<string | null>(null);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -74,6 +73,10 @@ const OrganisationAuth = () => {
         throw new Error("Please select different security questions");
       }
 
+      if (!organizationName || !contactPersonName || !phoneNumber || !organizationDescription) {
+        throw new Error("Please fill in all organization information");
+      }
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -89,10 +92,14 @@ const OrganisationAuth = () => {
         const answer1Hash = await hashSecurityAnswer(securityAnswer1);
         const answer2Hash = await hashSecurityAnswer(securityAnswer2);
 
-        // Update profile with security questions
+        // Update profile with all organization information
         await supabase
           .from("profiles")
           .update({
+            organization_name: organizationName,
+            contact_person_name: contactPersonName,
+            phone: phoneNumber,
+            organization_description: organizationDescription,
             security_question_1: securityQuestion1,
             security_answer_1_hash: answer1Hash,
             security_question_2: securityQuestion2,
@@ -108,53 +115,14 @@ const OrganisationAuth = () => {
 
         toast({
           title: "Account created!",
-          description: "Please complete your organization profile.",
+          description: "Please upload your organization license for verification.",
         });
 
-        setShowProfileForm(true);
+        setShowLicenseUpload(true);
       }
     } catch (error: any) {
       toast({
         title: "Sign up failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleProfileSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      if (!organizationName || !contactPersonName || !phoneNumber || !organizationDescription) {
-        throw new Error("Please fill in all required fields");
-      }
-
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) throw new Error("User not found");
-
-      const { error } = await supabase.from("profiles").update({
-        organization_name: organizationName,
-        contact_person_name: contactPersonName,
-        phone: phoneNumber,
-        organization_description: organizationDescription,
-      }).eq("id", user.id);
-
-      if (error) throw error;
-
-      setShowProfileForm(false);
-      setShowLicenseUpload(true);
-      toast({
-        title: "Profile updated!",
-        description: "Now please upload your organization license.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Profile update failed",
         description: error.message,
         variant: "destructive",
       });
@@ -470,77 +438,6 @@ const OrganisationAuth = () => {
     );
   }
 
-  if (showProfileForm) {
-    return (
-      <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-4">
-        <Card className="max-w-md p-8 space-y-6">
-          <div className="text-center space-y-2">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary shadow-primary">
-              <Heart className="h-8 w-8 text-primary-foreground" />
-            </div>
-            <h2 className="text-2xl font-bold">Complete Your Profile</h2>
-            <p className="text-muted-foreground">
-              Please provide your organization details before uploading your license.
-            </p>
-          </div>
-          <form onSubmit={handleProfileSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="organizationName">Organization Name *</Label>
-              <Input
-                id="organizationName"
-                type="text"
-                value={organizationName}
-                onChange={(e) => setOrganizationName(e.target.value)}
-                required
-                placeholder="Enter organization name"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="contactPersonName">Contact Person Name *</Label>
-              <Input
-                id="contactPersonName"
-                type="text"
-                value={contactPersonName}
-                onChange={(e) => setContactPersonName(e.target.value)}
-                required
-                placeholder="Enter contact person name"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="phoneNumber">Phone Number *</Label>
-              <Input
-                id="phoneNumber"
-                type="tel"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                required
-                placeholder="Enter phone number"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="organizationDescription">Organization Description *</Label>
-              <Textarea
-                id="organizationDescription"
-                value={organizationDescription}
-                onChange={(e) => setOrganizationDescription(e.target.value)}
-                required
-                placeholder="Describe your organization's mission and activities"
-                rows={4}
-                className="resize-none"
-              />
-              <p className="text-sm text-muted-foreground">
-                Tell vendors and the community about your organization's charitable work
-              </p>
-            </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Saving..." : "Continue to License Upload"}
-            </Button>
-          </form>
-        </Card>
-      </div>
-    );
-  }
-
   if (licenseStatus === "pending") {
     return (
       <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-4">
@@ -763,6 +660,63 @@ const OrganisationAuth = () => {
                     />
                   </div>
                 </div>
+                
+                <div className="border-t pt-4 space-y-4">
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Organisation Information
+                  </p>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="organization-name">Organization Name *</Label>
+                    <Input
+                      id="organization-name"
+                      value={organizationName}
+                      onChange={(e) => setOrganizationName(e.target.value)}
+                      required
+                      placeholder="Enter organization name"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="contact-person">Contact Person Name *</Label>
+                    <Input
+                      id="contact-person"
+                      value={contactPersonName}
+                      onChange={(e) => setContactPersonName(e.target.value)}
+                      required
+                      placeholder="Enter contact person name"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone Number *</Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value)}
+                      required
+                      placeholder="Enter phone number"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="org-description">Organization Description *</Label>
+                    <Textarea
+                      id="org-description"
+                      value={organizationDescription}
+                      onChange={(e) => setOrganizationDescription(e.target.value)}
+                      required
+                      placeholder="Describe your organization's mission and activities"
+                      rows={4}
+                      className="resize-none"
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Tell vendors and the community about your organization's charitable work
+                    </p>
+                  </div>
+                </div>
+                
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? "Creating account..." : "Create Account"}
                 </Button>
