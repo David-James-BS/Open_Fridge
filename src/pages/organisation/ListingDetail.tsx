@@ -11,10 +11,8 @@ import { Badge } from '@/components/ui/badge';
 import { PortionStatusBar } from '@/components/food/PortionStatusBar';
 import { QRScanner } from '@/components/scanner/QRScanner';
 import { isMobileDevice } from '@/utils/deviceDetection';
-import { isIOSDevice, isSecureContext } from '@/utils/camera';
 import { toast } from 'sonner';
-import { Loader2, ArrowLeft, MapPin, Clock, QrCode, Monitor, DollarSign, Heart, HeartOff, AlertCircle } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Loader2, ArrowLeft, MapPin, Clock, QrCode, Monitor, DollarSign, Heart, HeartOff } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function OrganisationListingDetail() {
@@ -503,16 +501,7 @@ export default function OrganisationListingDetail() {
                   </p>
                 </div>
                 
-                {isMobile && isIOSDevice() && !isSecureContext() && (
-                  <Alert variant="destructive" className="mb-2">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription className="text-xs">
-                      Camera scanning requires HTTPS on iPhone. Please use the hosted preview or manual QR entry will be available.
-                    </AlertDescription>
-                  </Alert>
-                )}
-                
-                <Button
+                <Button 
                   onClick={handleScanQR} 
                   size="lg" 
                   className="w-full"
