@@ -240,52 +240,61 @@ graph TD
     
     CheckListing -->|Yes| CheckRole{13. User Role?}
     CheckRole -->|Consumer| CheckDaily[14. Check Daily Limit]
-    CheckDaily --> UnderLimit{15. Under Daily Limit (3)?}
-    UnderLimit -->|No| ErrorDaily[16. Error: Daily collection limit reached (3 per day)]
+    CheckDaily --> UnderLimit{15. Under Daily Limit 5 portions?}
+    UnderLimit -->|No| ErrorDaily[16. Error: Daily collection limit reached 5 per day]
     ErrorDaily --> End5([End])
     
-    UnderLimit -->|Yes| CheckReserved{17. Has Active Reservation?}
-    CheckReserved -->|No| ErrorReserve[18. Error: You must reserve this item first]
-    ErrorReserve --> End6([End])
+    UnderLimit -->|Yes| CheckPortions{17. Sufficient Portions Available?}
+    CheckPortions -->|No| ErrorPortions[18. Error: Not enough portions available]
+    ErrorPortions --> End6([End])
     
-    CheckReserved -->|Yes| CheckDeposit{19. Deposit Paid?}
-    CheckDeposit -->|No| ErrorDeposit[20. Error: Deposit payment required]
-    ErrorDeposit --> End7([End])
+    CheckPortions -->|Yes| CollectConsumer[19. Mark as Collected & Create Collection Record]
+    CollectConsumer --> UpdatePortions1[20. Update Available Portions]
+    UpdatePortions1 --> Success1[21. Success Toast: Food collected successfully]
+    Success1 --> End7([End])
     
-    CheckDeposit -->|Yes| CollectConsumer[21. Mark as Collected]
-    CollectConsumer --> UpdatePortions1[22. Update Available Portions]
-    UpdatePortions1 --> Success1[23. Success Toast: Food collected successfully]
-    Success1 --> End8([End])
+    CheckRole -->|Charitable Org| CheckOrgReserve{22. Has Organization Reservation?}
+    CheckOrgReserve -->|No| ErrorOrgReserve[23. Error: Organization must reserve first]
+    ErrorOrgReserve --> End8([End])
     
-    CheckRole -->|Charitable Org| CheckOrgReserve{24. Has Organization Reservation?}
-    CheckOrgReserve -->|No| ErrorOrgReserve[25. Error: Organization must reserve first]
-    ErrorOrgReserve --> End9([End])
+    CheckOrgReserve -->|Yes| CheckDeposit{24. Deposit Paid?}
+    CheckDeposit -->|No| ErrorDeposit[25. Error: Deposit payment required]
+    ErrorDeposit --> End9([End])
     
-    CheckOrgReserve -->|Yes| CollectOrg[26. Mark as Collected by Organization]
-    CollectOrg --> UpdatePortions2[27. Update Available Portions]
-    UpdatePortions2 --> Success2[28. Success Toast: Collected for distribution]
-    Success2 --> End10([End])
+    CheckDeposit -->|Yes| CheckAlready{26. Already Collected?}
+    CheckAlready -->|Yes| ErrorAlready[27. Error: Reservation already collected]
+    ErrorAlready --> End10([End])
+    
+    CheckAlready -->|No| CheckOrgPortions{28. Sufficient Portions for Reservation?}
+    CheckOrgPortions -->|No| ErrorOrgPortions[29. Error: Not enough portions available]
+    ErrorOrgPortions --> End11([End])
+    
+    CheckOrgPortions -->|Yes| CollectOrg[30. Mark Reservation as Collected]
+    CollectOrg --> UpdatePortions2[31. Update Available Portions]
+    UpdatePortions2 --> Success2[32. Success Toast: Collected for distribution]
+    Success2 --> End12([End])
             </div>
 
             <div class="metrics">
-                <h3>Cyclomatic Complexity: 12</h3>
+                <h3>Cyclomatic Complexity: 13</h3>
                 <p><strong>Formula:</strong> V(G) = E - N + 2P</p>
                 
                 <div class="paths">
-                    <h4>Basis Paths (12 independent paths):</h4>
+                    <h4>Basis Paths (13 independent paths):</h4>
                     <ol>
                         <li><strong>Path 1:</strong> 1 → 2 → 3 → 4 → End (Not logged in)</li>
                         <li><strong>Path 2:</strong> 1 → 2 → 3 → 5 → 6 → 7 → End (Invalid QR format)</li>
                         <li><strong>Path 3:</strong> 1 → 2 → 3 → 5 → 6 → 8 → 9 → 10 → End (QR not found)</li>
                         <li><strong>Path 4:</strong> 1 → 2 → 3 → 5 → 6 → 8 → 9 → 11 → 12 → End (Listing unavailable)</li>
-                        <li><strong>Path 5:</strong> 1 → 2 → 3 → 5 → 6 → 8 → 9 → 11 → 13 → 14 → 15 → 16 → End (Daily limit reached)</li>
-                        <li><strong>Path 6:</strong> 1 → 2 → 3 → 5 → 6 → 8 → 9 → 11 → 13 → 14 → 15 → 17 → 18 → End (No reservation)</li>
-                        <li><strong>Path 7:</strong> 1 → 2 → 3 → 5 → 6 → 8 → 9 → 11 → 13 → 14 → 15 → 17 → 19 → 20 → End (No deposit)</li>
-                        <li><strong>Path 8:</strong> 1 → 2 → 3 → 5 → 6 → 8 → 9 → 11 → 13 → 14 → 15 → 17 → 19 → 21 → 22 → 23 → End (Consumer success)</li>
-                        <li><strong>Path 9:</strong> 1 → 2 → 3 → 5 → 6 → 8 → 9 → 11 → 13 → 24 → 25 → End (Org no reservation)</li>
-                        <li><strong>Path 10:</strong> 1 → 2 → 3 → 5 → 6 → 8 → 9 → 11 → 13 → 24 → 26 → 27 → 28 → End (Org success)</li>
-                        <li><strong>Path 11:</strong> Alternative path through Consumer → CheckDaily → UnderLimit → Yes</li>
-                        <li><strong>Path 12:</strong> Alternative path through Role check → Charitable Org branch</li>
+                        <li><strong>Path 5:</strong> 1 → 2 → 3 → 5 → 6 → 8 → 9 → 11 → 13 → 14 → 15 → 16 → End (Consumer daily limit)</li>
+                        <li><strong>Path 6:</strong> 1 → 2 → 3 → 5 → 6 → 8 → 9 → 11 → 13 → 14 → 15 → 17 → 18 → End (Consumer insufficient portions)</li>
+                        <li><strong>Path 7:</strong> 1 → 2 → 3 → 5 → 6 → 8 → 9 → 11 → 13 → 14 → 15 → 17 → 19 → 20 → 21 → End (Consumer success)</li>
+                        <li><strong>Path 8:</strong> 1 → 2 → 3 → 5 → 6 → 8 → 9 → 11 → 13 → 22 → 23 → End (Org no reservation)</li>
+                        <li><strong>Path 9:</strong> 1 → 2 → 3 → 5 → 6 → 8 → 9 → 11 → 13 → 22 → 24 → 25 → End (Org no deposit)</li>
+                        <li><strong>Path 10:</strong> 1 → 2 → 3 → 5 → 6 → 8 → 9 → 11 → 13 → 22 → 24 → 26 → 27 → End (Org already collected)</li>
+                        <li><strong>Path 11:</strong> 1 → 2 → 3 → 5 → 6 → 8 → 9 → 11 → 13 → 22 → 24 → 26 → 28 → 29 → End (Org insufficient portions)</li>
+                        <li><strong>Path 12:</strong> 1 → 2 → 3 → 5 → 6 → 8 → 9 → 11 → 13 → 22 → 24 → 26 → 28 → 30 → 31 → 32 → End (Org success)</li>
+                        <li><strong>Path 13:</strong> Alternative edge coverage through decision nodes</li>
                     </ol>
                 </div>
             </div>
@@ -317,8 +326,8 @@ graph TD
                     </tr>
                     <tr>
                         <td style="padding: 12px; border: 1px solid #ddd;">Consumer Scan QR + Collect Food</td>
-                        <td style="padding: 12px; text-align: center; border: 1px solid #ddd;">12</td>
-                        <td style="padding: 12px; text-align: center; border: 1px solid #ddd;">12</td>
+                        <td style="padding: 12px; text-align: center; border: 1px solid #ddd;">13</td>
+                        <td style="padding: 12px; text-align: center; border: 1px solid #ddd;">13</td>
                         <td style="padding: 12px; border: 1px solid #ddd;">High</td>
                     </tr>
                 </tbody>
