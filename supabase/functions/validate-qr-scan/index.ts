@@ -52,18 +52,20 @@ Deno.serve(async (req) => {
       throw new Error('Invalid QR code');
     }
 
-    // Check if vendor has an active listing
-    const { data: activeListing, error: listingError } = await supabase
+    // Check if vendor has an active listing (get the most recent one if multiple exist)
+    const { data: activeListings, error: listingError } = await supabase
       .from('food_listings')
       .select('*')
       .eq('vendor_id', vendorQR.vendor_id)
       .eq('status', 'active')
-      .single();
+      .order('created_at', { ascending: false });
 
-    if (listingError || !activeListing) {
+    if (listingError || !activeListings || activeListings.length === 0) {
       console.error('No active listing found:', listingError);
       throw new Error('Vendor has no active food listing');
     }
+
+    const activeListing = activeListings[0]; // Use the most recent listing
 
     // Check user role
     const { data: userRoles, error: roleError } = await supabase
