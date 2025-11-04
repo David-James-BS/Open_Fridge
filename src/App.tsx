@@ -16,14 +16,20 @@ import ListingDetail from "./pages/consumer/ListingDetail";
 import NotificationSettings from "./pages/consumer/NotificationSettings";
 import Favorites from "./pages/consumer/Favorites";
 import OrganisationDashboard from "./pages/organisation/OrganisationDashboard";
+import OrganisationProfile from "./pages/organisation/OrganisationProfile";
 import OrganisationListingDetail from "./pages/organisation/ListingDetail";
+import OrganisationLicensePending from "./pages/organisation/LicensePending";
 import VendorDashboard from "./pages/vendor/VendorDashboard";
 import VendorProfile from "./pages/vendor/VendorProfile";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminProfile from "./pages/admin/AdminProfile";
 import CreateListing from "./pages/vendor/CreateListing";
 import EditListing from "./pages/vendor/EditListing";
 import QRCodePage from "./pages/vendor/QRCodePage";
 import VendorHistory from "./pages/vendor/VendorHistory";
+import LicenseRejection from "./pages/vendor/LicenseRejection";
+import LicensePending from "./pages/vendor/LicensePending";
+import VendorPublicProfile from "./pages/vendor/VendorPublicProfile";
 import ScanQR from "./pages/ScanQR";
 import NotFound from "./pages/NotFound";
 
@@ -49,15 +55,23 @@ const App = () => (
             <Route path="/consumer/favorites" element={<Favorites />} />
             <Route path="/listing/:id" element={<ListingDetail />} />
             <Route path="/organisation/dashboard" element={<OrganisationDashboard />} />
+            <Route path="/organisation/profile" element={<OrganisationProfile />} />
+            <Route path="/organisation/favorites" element={<Favorites />} />
             <Route path="/organisation/listing/:id" element={<OrganisationListingDetail />} />
+            <Route path="/organisation/license-pending" element={<OrganisationLicensePending />} />
             <Route path="/vendor/dashboard" element={<VendorDashboard />} />
             <Route path="/vendor/profile" element={<VendorProfile />} />
             <Route path="/vendor/create-listing" element={<CreateListing />} />
             <Route path="/vendor/edit-listing/:id" element={<EditListing />} />
             <Route path="/vendor/qr-code" element={<QRCodePage />} />
             <Route path="/vendor/history" element={<VendorHistory />} />
+            <Route path="/vendor/license-rejection" element={<LicenseRejection />} />
+            <Route path="/vendor/license-pending" element={<LicensePending />} />
+            <Route path="/vendor/:vendorId/listings" element={<VendorPublicProfile />} />
             <Route path="/scan" element={<ScanQR />} />
-            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/auth" element={<AdminAuth />} />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/profile" element={<AdminProfile />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

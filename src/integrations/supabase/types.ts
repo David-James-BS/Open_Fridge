@@ -163,7 +163,7 @@ export type Database = {
           {
             foreignKeyName: "licenses_user_id_fkey"
             columns: ["user_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -204,40 +204,111 @@ export type Database = {
           },
         ]
       }
+      organisation_collections: {
+        Row: {
+          collected_at: string
+          created_at: string
+          id: string
+          listing_id: string
+          organisation_id: string
+          portions_collected: number
+        }
+        Insert: {
+          collected_at?: string
+          created_at?: string
+          id?: string
+          listing_id: string
+          organisation_id: string
+          portions_collected: number
+        }
+        Update: {
+          collected_at?: string
+          created_at?: string
+          id?: string
+          listing_id?: string
+          organisation_id?: string
+          portions_collected?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organisation_collections_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "food_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organisation_vendor_followers: {
+        Row: {
+          created_at: string
+          id: string
+          organisation_id: string
+          vendor_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          organisation_id: string
+          vendor_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          organisation_id?: string
+          vendor_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
+          contact_person_name: string | null
           created_at: string
           email: string
           id: string
           location: string | null
           name: string | null
+          organization_description: string | null
+          organization_name: string | null
           phone: string | null
-          security_answer: string | null
-          security_question: string | null
+          security_answer_1_hash: string | null
+          security_answer_2_hash: string | null
+          security_question_1: string | null
+          security_question_2: string | null
           stall_name: string | null
           updated_at: string
         }
         Insert: {
+          contact_person_name?: string | null
           created_at?: string
           email: string
           id: string
           location?: string | null
           name?: string | null
+          organization_description?: string | null
+          organization_name?: string | null
           phone?: string | null
-          security_answer?: string | null
-          security_question?: string | null
+          security_answer_1_hash?: string | null
+          security_answer_2_hash?: string | null
+          security_question_1?: string | null
+          security_question_2?: string | null
           stall_name?: string | null
           updated_at?: string
         }
         Update: {
+          contact_person_name?: string | null
           created_at?: string
           email?: string
           id?: string
           location?: string | null
           name?: string | null
+          organization_description?: string | null
+          organization_name?: string | null
           phone?: string | null
-          security_answer?: string | null
-          security_question?: string | null
+          security_answer_1_hash?: string | null
+          security_answer_2_hash?: string | null
+          security_question_1?: string | null
+          security_question_2?: string | null
           stall_name?: string | null
           updated_at?: string
         }

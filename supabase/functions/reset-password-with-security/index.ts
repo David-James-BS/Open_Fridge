@@ -1,9 +1,15 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.75.1';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { corsHeaders } from '../_shared/cors.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+// Simple hash function using Web Crypto API
+async function hashAnswer(answer: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(answer.toLowerCase().trim());
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashHex;
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -11,73 +17,65 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { email, securityAnswer, newPassword } = await req.json();
+    const { email, securityAnswer1, securityAnswer2, newPassword } = await req.json();
 
-    if (!email || !securityAnswer || !newPassword) {
-      return new Response(
-        JSON.stringify({ error: 'Email, security answer, and new password are required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    if (!email || !securityAnswer1 || !securityAnswer2 || !newPassword) {
+      throw new Error('Missing required fields');
     }
 
     const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    // Get user by email
-    const { data: authUsers, error: authError } = await supabaseAdmin.auth.admin.listUsers();
-    if (authError) throw authError;
-
-    const user = authUsers.users.find(u => u.email === email);
-    if (!user) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid credentials' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Get profile with security answer
+    // Get user profile with security questions
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
-      .select('security_answer')
-      .eq('id', user.id)
+      .select('id, security_answer_1_hash, security_answer_2_hash')
+      .eq('email', email)
       .single();
 
     if (profileError || !profile) {
-      return new Response(
-        JSON.stringify({ error: 'Security question not set up for this account' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      console.error('Profile error:', profileError);
+      throw new Error('User not found');
     }
 
-    // Compare security answers (case-insensitive)
-    if (profile.security_answer?.toLowerCase() !== securityAnswer.toLowerCase()) {
-      return new Response(
-        JSON.stringify({ error: 'Incorrect security answer' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    if (!profile.security_answer_1_hash || !profile.security_answer_2_hash) {
+      throw new Error('Security questions not set for this account');
+    }
+
+    // Hash the provided answers and verify
+    const answer1Hash = await hashAnswer(securityAnswer1);
+    const answer2Hash = await hashAnswer(securityAnswer2);
+
+    if (profile.security_answer_1_hash !== answer1Hash || 
+        profile.security_answer_2_hash !== answer2Hash) {
+      throw new Error('Incorrect security answers');
     }
 
     // Update password
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
-      user.id,
+      profile.id,
       { password: newPassword }
     );
 
-    if (updateError) throw updateError;
+    if (updateError) {
+      console.error('Password update error:', updateError);
+      throw new Error('Failed to update password');
+    }
+
+    console.log('Password reset successful for user:', profile.id);
 
     return new Response(
-      JSON.stringify({ message: 'Password reset successfully' }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ success: true }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
-
   } catch (error) {
-    console.error('Error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    console.error('Error in reset-password-with-security:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Password reset failed';
     return new Response(
       JSON.stringify({ error: errorMessage }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

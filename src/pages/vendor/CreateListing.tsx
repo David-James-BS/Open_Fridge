@@ -43,6 +43,15 @@ export default function CreateListing() {
   const [dietaryInfo, setDietaryInfo] = useState<DietaryType[]>([]);
   const [imageFile, setImageFile] = useState<File | null>(null);
 
+  // Ensure datetime-local min is now in local time (no past selections)
+  const minDateTimeLocal = (() => {
+    const now = new Date();
+    now.setSeconds(0, 0);
+    const offsetMs = now.getTimezoneOffset() * 60 * 1000;
+    const local = new Date(now.getTime() - offsetMs);
+    return local.toISOString().slice(0, 16);
+  })();
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -65,11 +74,44 @@ export default function CreateListing() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    
+    if (!user) {
+      toast.error('You must be logged in to create a listing');
+      return;
+    }
+
+    // Check if vendor already has 5 active listings
+    const { count, error: countError } = await supabase
+      .from("food_listings")
+      .select("*", { count: "exact", head: true })
+      .eq("vendor_id", user.id)
+      .eq("status", "active");
+
+    if (countError) {
+      console.error("Error checking listing count:", countError);
+      toast.error("Failed to verify listing limit");
+      return;
+    }
+
+    if (count && count >= 5) {
+      toast.error("You can only have 5 active listings at a time");
+      return;
+    }
 
     if (!formData.title || !formData.location || !formData.cuisine || 
         !formData.totalPortions || !formData.bestBefore) {
       toast.error('Please fill in all required fields');
+      return;
+    }
+
+    // Validate best before is in the future (local time)
+    const selected = new Date(formData.bestBefore);
+    if (isNaN(selected.getTime())) {
+      toast.error('Invalid date/time selected');
+      return;
+    }
+    if (selected.getTime() <= Date.now()) {
+      toast.error('Best before must be in the future');
       return;
     }
 
@@ -241,6 +283,7 @@ export default function CreateListing() {
                 id="bestBefore"
                 type="datetime-local"
                 value={formData.bestBefore}
+                min={minDateTimeLocal}
                 onChange={(e) => setFormData({ ...formData, bestBefore: e.target.value })}
                 required
               />

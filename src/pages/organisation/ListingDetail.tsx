@@ -12,7 +12,7 @@ import { PortionStatusBar } from '@/components/food/PortionStatusBar';
 import { QRScanner } from '@/components/scanner/QRScanner';
 import { isMobileDevice } from '@/utils/deviceDetection';
 import { toast } from 'sonner';
-import { Loader2, ArrowLeft, MapPin, Clock, QrCode, Monitor, DollarSign } from 'lucide-react';
+import { Loader2, ArrowLeft, MapPin, Clock, QrCode, Monitor, DollarSign, Heart, HeartOff } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function OrganisationListingDetail() {
@@ -28,6 +28,8 @@ export default function OrganisationListingDetail() {
   const [reserving, setReserving] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
 
   const MAX_RESERVE_PERCENTAGE = 0.85;
 
@@ -84,6 +86,12 @@ export default function OrganisationListingDetail() {
     }
   }, [id, user]);
 
+  useEffect(() => {
+    if (listing) {
+      checkFollowStatus();
+    }
+  }, [listing]);
+
   const fetchListing = async () => {
     try {
       const { data, error } = await supabase
@@ -109,6 +117,67 @@ export default function OrganisationListingDetail() {
       navigate('/organisation/dashboard');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkFollowStatus = async () => {
+    if (!listing || !user?.id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("organisation_vendor_followers")
+        .select("id")
+        .eq("organisation_id", user.id)
+        .eq("vendor_id", listing.vendor_id)
+        .maybeSingle();
+
+      if (error && error.code !== "PGRST116") throw error;
+
+      setIsFollowing(!!data);
+    } catch (error) {
+      console.error("Error checking follow status:", error);
+    }
+  };
+
+  const handleFollowToggle = async () => {
+    if (!listing || !user?.id) return;
+    setFollowLoading(true);
+
+    try {
+      if (isFollowing) {
+        const { error } = await supabase
+          .from("organisation_vendor_followers")
+          .delete()
+          .eq("organisation_id", user.id)
+          .eq("vendor_id", listing.vendor_id);
+
+        if (error) throw error;
+        setIsFollowing(false);
+        toast.success("Unfollowed vendor");
+      } else {
+        const { error } = await supabase.from("organisation_vendor_followers").insert({
+          organisation_id: user.id,
+          vendor_id: listing.vendor_id,
+        });
+
+        if (error) {
+          // If duplicate key error, it means already following
+          if (error.code === "23505") {
+            setIsFollowing(true);
+            toast.info("You are already following this vendor");
+          } else {
+            throw error;
+          }
+        } else {
+          setIsFollowing(true);
+          toast.success("Following vendor - you'll be notified of new listings");
+        }
+      }
+    } catch (error: any) {
+      console.error("Error toggling follow:", error);
+      toast.error(error.message || "Failed to update follow status");
+    } finally {
+      setFollowLoading(false);
     }
   };
 
@@ -307,10 +376,34 @@ export default function OrganisationListingDetail() {
         </div>
 
         <CardHeader>
-          <CardTitle className="text-2xl">{listing.title}</CardTitle>
-          {vendorInfo?.stall_name && (
-            <p className="text-muted-foreground">by {vendorInfo.stall_name}</p>
-          )}
+          <div className="flex items-start justify-between">
+            <div>
+              <CardTitle className="text-2xl">{listing.title}</CardTitle>
+              {vendorInfo?.stall_name && (
+                <p className="text-muted-foreground mt-1">by {vendorInfo.stall_name}</p>
+              )}
+            </div>
+            <Button
+              variant={isFollowing ? "outline" : "default"}
+              size="sm"
+              onClick={handleFollowToggle}
+              disabled={followLoading}
+            >
+              {followLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : isFollowing ? (
+                <>
+                  <HeartOff className="h-4 w-4 mr-2" />
+                  Unfollow
+                </>
+              ) : (
+                <>
+                  <Heart className="h-4 w-4 mr-2" />
+                  Follow Vendor
+                </>
+              )}
+            </Button>
+          </div>
         </CardHeader>
 
         <CardContent className="space-y-6">

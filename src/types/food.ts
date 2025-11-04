@@ -1,25 +1,25 @@
-export type CuisineType = 
-  | 'chinese'
-  | 'malay'
-  | 'indian'
-  | 'western'
-  | 'japanese'
-  | 'korean'
-  | 'thai'
-  | 'vietnamese'
-  | 'italian'
-  | 'mexican'
-  | 'other';
+export type CuisineType =
+  | "chinese"
+  | "malay"
+  | "indian"
+  | "western"
+  | "japanese"
+  | "korean"
+  | "thai"
+  | "vietnamese"
+  | "italian"
+  | "mexican"
+  | "other";
 
-export type DietaryType = 
-  | 'vegetarian'
-  | 'vegan'
-  | 'halal'
-  | 'kosher'
-  | 'gluten_free'
-  | 'dairy_free'
-  | 'nut_free'
-  | 'none';
+export type DietaryType =
+  | "vegetarian"
+  | "vegan"
+  | "halal"
+  | "kosher"
+  | "gluten_free"
+  | "dairy_free"
+  | "nut_free"
+  | "none";
 
 export interface FoodListing {
   id: string;
@@ -32,7 +32,7 @@ export interface FoodListing {
   total_portions: number;
   remaining_portions: number;
   best_before: string;
-  status: 'active' | 'completed' | 'cancelled' | 'expired';
+  status: "active" | "completed" | "cancelled" | "expired";
   image_url: string | null;
   priority_until: string | null;
   available_for_charity: boolean;
@@ -47,7 +47,7 @@ export interface Reservation {
   organisation_id: string;
   portions_reserved: number;
   deposit_amount: number;
-  deposit_status: 'pending' | 'paid' | 'refunded';
+  deposit_status: "pending" | "paid" | "refunded";
   collected: boolean;
   collected_at: string | null;
   pickup_time: string | null;

@@ -150,9 +150,9 @@ export default function ScanQR() {
       setSuccess(true);
       toast.success('Food collected successfully!');
       
-      // Refresh listing data
+      // Redirect back to listing detail page
       setTimeout(() => {
-        fetchListingData();
+        navigate(`/listing/${listing.id}`);
       }, 1500);
     } catch (error: any) {
       console.error('Error collecting food:', error);
