@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { SecurityQuestionsSection } from '@/components/profile/SecurityQuestionsSection';
 import { toast } from 'sonner';
 import { Loader2, ArrowLeft, Save, Mail, Phone, MapPin, Store, Clock } from 'lucide-react';
 import { FoodListing } from '@/types/food';
@@ -19,8 +18,6 @@ interface VendorProfile {
   email: string;
   phone: string;
   location: string;
-  security_question_1?: string;
-  security_question_2?: string;
 }
 
 export default function VendorProfile() {
@@ -44,7 +41,7 @@ export default function VendorProfile() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('stall_name, email, phone, location, security_question_1, security_question_2')
+        .select('stall_name, email, phone, location')
         .eq('id', user.id)
         .single();
 
@@ -285,12 +282,6 @@ export default function VendorProfile() {
           </CardContent>
         </Card>
       )}
-
-      <SecurityQuestionsSection 
-        userId={user?.id || ''} 
-        question1={profile?.security_question_1}
-        question2={profile?.security_question_2}
-      />
     </div>
   );
 }

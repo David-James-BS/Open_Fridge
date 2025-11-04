@@ -1,125 +1,73 @@
-# Open_Fridge
+# Welcome to your Lovable project
 
-A web app built with Vite, TypeScript, and React for managing fridge inventory and related workflows.
+## Project info
 
-## Project overview
+**URL**: https://lovable.dev/projects/c898b4d5-82c4-4cdb-b9e9-0013065fa655
 
-This repository contains the Open_Fridge frontend. It uses modern web tooling (Vite + TypeScript), Tailwind CSS, and shadcn-ui components.
+## How can I edit this code?
 
-Key goals:
+There are several ways of editing your application.
 
-- Provide a fast, accessible UI for scanning and managing food items.
-- Integrate with Supabase for backend functions and storage (see `supabase/` for serverless functions and migrations).
+**Use Lovable**
 
-## Technologies
+Simply visit the [Lovable Project](https://lovable.dev/projects/c898b4d5-82c4-4cdb-b9e9-0013065fa655) and start prompting.
+
+Changes made via Lovable will be committed automatically to this repo.
+
+**Use your preferred IDE**
+
+If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+
+The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+
+Follow these steps:
+
+```sh
+# Step 1: Clone the repository using the project's Git URL.
+git clone <YOUR_GIT_URL>
+
+# Step 2: Navigate to the project directory.
+cd <YOUR_PROJECT_NAME>
+
+# Step 3: Install the necessary dependencies.
+npm i
+
+# Step 4: Start the development server with auto-reloading and an instant preview.
+npm run dev
+```
+
+**Edit a file directly in GitHub**
+
+- Navigate to the desired file(s).
+- Click the "Edit" button (pencil icon) at the top right of the file view.
+- Make your changes and commit the changes.
+
+**Use GitHub Codespaces**
+
+- Navigate to the main page of your repository.
+- Click on the "Code" button (green button) near the top right.
+- Select the "Codespaces" tab.
+- Click on "New codespace" to launch a new Codespace environment.
+- Edit files directly within the Codespace and commit and push your changes once you're done.
+
+## What technologies are used for this project?
+
+This project is built with:
 
 - Vite
 - TypeScript
 - React
-- Tailwind CSS
 - shadcn-ui
-- Supabase (serverless functions & migrations bundled in `supabase/`)
+- Tailwind CSS
 
-## Prerequisites
+## How can I deploy this project?
 
-- Node.js (recommended via nvm)
-- npm or a compatible package manager (pnpm / yarn also supported but examples use npm)
+Simply open [Lovable](https://lovable.dev/projects/c898b4d5-82c4-4cdb-b9e9-0013065fa655) and click on Share -> Publish.
 
-- Deno (required for running the Supabase/Deno serverless functions locally)
+## Can I connect a custom domain to my Lovable project?
 
-Recommended installs:
+Yes, you can!
 
-```sh
-# macOS (Homebrew)
-brew install deno
+To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
-# or using the official install script
-curl -fsSL https://deno.land/x/install/install.sh | sh
-```
-
-If you use VS Code, install the "Deno" extension (extension id: `denoland.vscode-deno`) and enable it for the workspace so editor features and workspace Deno tooling work correctly.
-
-Install Node with nvm:
-
-```sh
-# install nvm (if needed) — follow instructions at https://github.com/nvm-sh/nvm
-# then install a recent Node.js LTS, e.g.:
-nvm install --lts
-nvm use --lts
-```
-
-## Local development
-
-1. Clone the repository:
-
-```sh
-git clone <YOUR_GIT_URL>
-cd <YOUR_PROJECT_NAME>
-```
-
-1. Install dependencies:
-
-```sh
-npm install
-```
-
-1. Start the dev server:
-
-```sh
-npm run dev
-```
-
-The app will run locally (Vite dev server). Open the address shown in the terminal (usually `http://localhost:5173`).
-
-## Build for production
-
-```sh
-npm run build
-```
-
-This creates an optimized `dist/` you can deploy to any static host.
-
-## Deploying
-
-You can deploy the built output to any static hosting provider (Netlify, Vercel, Cloudflare Pages, S3 + CloudFront, etc.). Most providers accept the `dist/` directory produced by `npm run build`.
-
-If you use Vercel or Netlify, simply connect the repository and set the build command to `npm run build` and the publish directory to `dist`.
-
-## Supabase backend
-
-This repo includes a `supabase/` folder with serverless functions and DB migrations. See that folder for details on functions such as QR generation and license management. Deploy those to your Supabase project as needed.
-
-## Project structure (high-level)
-
-- `src/` — main frontend source
-  - `components/` — React components grouped by feature
-  - `pages/` — route pages
-  - `integrations/supabase/` — Supabase client and helpers
-- `public/` — static assets
-- `supabase/` — serverless functions and DB migrations
-
-## Contributing
-
-1. Fork & branch from `main`.
-2. Add tests or a changelog entry if applicable.
-3. Submit a pull request with a clear description.
-
-Please follow the existing TypeScript and styling conventions. Run linters and formatters before opening a PR.
-
-## Troubleshooting
-
-- If dev server fails to start, confirm Node version (`node -v`) and reinstall dependencies.
-- If environment-specific features rely on Supabase, ensure your `.env` variables (Supabase URL/Key) are set before running.
-
-## License & contact
-
-Include your license here (e.g., MIT). For questions, open an issue or contact the repository owner.
-
----
-
-If you'd like, I can also:
-
-- add a short `README` section documenting how to run the included Supabase functions locally (via `supabase` CLI),
-- or generate a small CONTRIBUTING.md and a basic CODE_OF_CONDUCT.md.
-
-Let me know which you'd prefer.
+Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)

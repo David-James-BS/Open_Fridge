@@ -9,10 +9,9 @@ interface FoodListingCardProps {
   vendorName?: string;
   onClick?: () => void;
   showPriorityBadge?: boolean;
-  onVendorClick?: () => void;
 }
 
-export function FoodListingCard({ listing, vendorName = "Vendor", onClick, showPriorityBadge, onVendorClick }: FoodListingCardProps) {
+export function FoodListingCard({ listing, vendorName = "Vendor", onClick, showPriorityBadge }: FoodListingCardProps) {
   const availablePortions = listing.remaining_portions - (listing.reserved_portions || 0);
 
   return (
@@ -29,19 +28,7 @@ export function FoodListingCard({ listing, vendorName = "Vendor", onClick, showP
           <div className="space-y-3">
             <div>
               <h3 className="text-lg font-semibold line-clamp-1">{listing.title}</h3>
-              {onVendorClick ? (
-                <p 
-                  className="text-sm text-muted-foreground hover:text-primary cursor-pointer underline-offset-4 hover:underline"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onVendorClick();
-                  }}
-                >
-                  by {vendorName}
-                </p>
-              ) : (
-                <p className="text-sm text-muted-foreground">by {vendorName}</p>
-              )}
+              <p className="text-sm text-muted-foreground">by {vendorName}</p>
             </div>
 
             {listing.description && <p className="text-sm text-muted-foreground line-clamp-2">{listing.description}</p>}

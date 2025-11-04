@@ -5,11 +5,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { FoodListing } from "@/types/food";
 import { DeleteAccountDialog } from "@/components/shared/DeleteAccountDialog";
 import { PortionStatusBar } from "@/components/food/PortionStatusBar";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
+  AlertDialogTrigger,
   AlertDialogContent,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -19,93 +20,84 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Loader2, Clock, MapPin } from "lucide-react";
+import { Loader2, Plus, QrCode, Edit, X, Clock, MapPin, LogOut, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 
 export default function VendorDashboard() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const [activeListings, setActiveListings] = useState<FoodListing[]>([]);
+  const [activeListing, setActiveListing] = useState<FoodListing | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [listingToDelete, setListingToDelete] = useState<string | null>(null);
-  const [deleteAccountDialogOpen, setDeleteAccountDialogOpen] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      fetchActiveListings();
+    if (!user) return;
 
-      const channel = supabase
-        .channel('food_listings_changes')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'food_listings',
-            filter: `vendor_id=eq.${user.id}`
-          },
-          () => {
-            fetchActiveListings();
-          }
-        )
-        .subscribe();
+    fetchActiveListing();
 
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
+    // Set up realtime subscription for listings
+    const listingsChannel = supabase
+      .channel("vendor_listings")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "food_listings",
+          filter: `vendor_id=eq.${user.id}`,
+        },
+        () => {
+          fetchActiveListing();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(listingsChannel);
+    };
   }, [user]);
 
-  const fetchActiveListings = async () => {
+  const fetchActiveListing = async () => {
     if (!user) return;
 
     try {
+      setLoading(true);
       const { data, error } = await supabase
         .from("food_listings")
         .select("*")
         .eq("vendor_id", user.id)
         .eq("status", "active")
-        .order("updated_at", { ascending: false });
+        .maybeSingle();
 
       if (error) throw error;
-
-      setActiveListings(data || []);
-    } catch (error: any) {
-      console.error("Error fetching active listings:", error);
-      toast.error("Failed to load your active listings");
+      setActiveListing(data);
+    } catch (error) {
+      console.error("Error fetching active listing:", error);
+      toast.error("Failed to load listing");
     } finally {
       setLoading(false);
     }
   };
 
   const handleDeleteListing = async () => {
-    if (!listingToDelete) return;
+    if (!activeListing || !user) return;
 
     try {
       const { error } = await supabase
         .from("food_listings")
         .update({ status: "cancelled" })
-        .eq("id", listingToDelete);
+        .eq("id", activeListing.id)
+        .eq("vendor_id", user.id);
 
       if (error) throw error;
 
-      toast.success("Listing cancelled successfully");
-      setDeleteDialogOpen(false);
-      setListingToDelete(null);
-      fetchActiveListings();
-    } catch (error: any) {
+      toast.success("Listing deleted");
+      fetchActiveListing();
+    } catch (error) {
       console.error("Error deleting listing:", error);
-      toast.error("Failed to cancel listing");
+      toast.error("Failed to delete listing");
     }
   };
-
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/");
-  };
-
-  const hasReachedLimit = activeListings.length >= 5;
 
   if (loading) {
     return (
@@ -116,154 +108,133 @@ export default function VendorDashboard() {
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-6xl space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Vendor Dashboard</h1>
-          <p className="text-muted-foreground mt-1">
-            {activeListings.length} of 5 active listings
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button 
-            onClick={() => navigate("/vendor/create-listing")} 
-            disabled={hasReachedLimit}
-          >
-            {hasReachedLimit ? "Max Listings Reached" : "Create New Listing"}
+    <div className="container max-w-4xl mx-auto py-6 px-4 space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Vendor Dashboard</h1>
+        <div className="flex gap-2">
+          <Button onClick={() => navigate("/vendor/qr-code")} variant="outline">
+            <QrCode className="h-4 w-4 mr-2" />
+            My QR Code
           </Button>
-          <Button onClick={() => navigate("/vendor/qr-code")} variant="default">
-            View QR Code
-          </Button>
-          <Button onClick={() => navigate("/vendor/history")} variant="outline">
-            View History
-          </Button>
-          <Button onClick={handleSignOut} variant="outline">
-            Sign Out
-          </Button>
-          <Button
-            onClick={() => setDeleteAccountDialogOpen(true)}
-            variant="destructive"
-          >
-            Delete Account
-          </Button>
+          {!activeListing && (
+            <Button onClick={() => navigate("/vendor/create-listing")}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Listing
+            </Button>
+          )}
         </div>
       </div>
 
-      {hasReachedLimit && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-yellow-800">
-          You have reached the maximum of 5 active listings. Please cancel or complete a listing to create a new one.
-        </div>
-      )}
+      {activeListing ? (
+        <Card className="overflow-hidden">
+          <div className="relative h-48 md:h-64">
+            {activeListing.image_url ? (
+              <img src={activeListing.image_url} alt={activeListing.title} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full bg-muted" />
+            )}
+            <Badge className="absolute top-4 right-4 bg-green-500">Active</Badge>
+          </div>
 
-      {activeListings.length > 0 ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {activeListings.map((listing) => (
-            <Card key={listing.id}>
-              <CardContent className="p-6">
-                {listing.image_url && (
-                  <div className="mb-4 rounded-lg overflow-hidden">
-                    <img
-                      src={listing.image_url}
-                      alt={listing.title}
-                      className="w-full h-48 object-cover"
-                    />
-                  </div>
-                )}
-
-                <div className="space-y-4">
-                  <div>
-                    <h2 className="text-xl font-bold">{listing.title}</h2>
-                    {listing.description && (
-                      <p className="text-muted-foreground mt-2 line-clamp-2">{listing.description}</p>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-2 text-sm">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <span className="line-clamp-1">{listing.location}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span>Best Before: {format(new Date(listing.best_before), "PPp")}</span>
-                    </div>
-                  </div>
-
-                  <PortionStatusBar
-                    totalPortions={listing.total_portions}
-                    remainingPortions={listing.remaining_portions}
-                    reservedPortions={listing.reserved_portions || 0}
-                  />
-
-                  <div className="flex flex-wrap gap-2">
-                    <Badge variant="secondary">{listing.cuisine}</Badge>
-                    {listing.dietary_info.slice(0, 2).map((diet) => (
-                      <Badge key={diet} variant="outline">
-                        {diet.replace("_", " ")}
-                      </Badge>
-                    ))}
-                    {listing.dietary_info.length > 2 && (
-                      <Badge variant="outline">+{listing.dietary_info.length - 2} more</Badge>
-                    )}
-                  </div>
-
-                  <div className="flex gap-2 pt-4">
-                    <Button
-                      onClick={() => navigate(`/vendor/edit-listing/${listing.id}`)}
-                      className="flex-1"
-                    >
-                      Edit
+          <CardHeader>
+            <CardTitle className="flex items-start justify-between">
+              <span>{activeListing.title}</span>
+              <div className="flex gap-2">
+                <Button
+                  size="icon"
+                  variant="outline"
+                  onClick={() => navigate(`/vendor/edit-listing/${activeListing.id}`)}
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="icon" variant="outline">
+                      <X className="h-4 w-4" />
                     </Button>
-                    <Button 
-                      variant="destructive" 
-                      className="flex-1"
-                      onClick={() => {
-                        setListingToDelete(listing.id);
-                        setDeleteDialogOpen(true);
-                      }}
-                    >
-                      Delete
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Listing</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete this listing? This action cannot be undone and the listing will
+                        be moved to history.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>No, keep listing</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDeleteListing}>Yes, delete listing</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            </CardTitle>
+          </CardHeader>
+
+          <CardContent className="space-y-4">
+            {activeListing.description && <p className="text-muted-foreground">{activeListing.description}</p>}
+
+            <div className="grid gap-3">
+              <div className="flex items-center gap-2 text-sm">
+                <MapPin className="h-4 w-4 text-muted-foreground" />
+                <span>{activeListing.location}</span>
+              </div>
+
+              <div className="flex items-center gap-2 text-sm">
+                <Clock className="h-4 w-4 text-muted-foreground" />
+                <span>Best before: {format(new Date(activeListing.best_before), "PPp")}</span>
+              </div>
+            </div>
+
+            <PortionStatusBar
+              totalPortions={activeListing.total_portions}
+              remainingPortions={activeListing.remaining_portions}
+              reservedPortions={activeListing.reserved_portions || 0}
+            />
+
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="secondary">{activeListing.cuisine}</Badge>
+              {activeListing.dietary_info.map((diet) => (
+                <Badge key={diet} variant="outline">
+                  {diet.replace("_", " ")}
+                </Badge>
+              ))}
+            </div>
+
+            {activeListing.available_for_charity && (
+              <Badge variant="outline" className="border-orange-500 text-orange-600">
+                Available for Charitable Organisations
+              </Badge>
+            )}
+          </CardContent>
+        </Card>
       ) : (
         <Card>
-          <CardContent className="p-12 text-center">
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold">No Active Listings</h2>
-              <p className="text-muted-foreground">
-                You don't have any active food listings at the moment.
-              </p>
-              <Button onClick={() => navigate("/vendor/create-listing")}>
-                Create New Listing
-              </Button>
-            </div>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <p className="text-muted-foreground mb-4">No active listing</p>
+            <Button onClick={() => navigate("/vendor/create-listing")}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Your First Listing
+            </Button>
           </CardContent>
         </Card>
       )}
 
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will cancel this listing. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setListingToDelete(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteListing}>
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <div className="flex gap-4">
+        <Button variant="outline" className="flex-1" onClick={() => navigate("/vendor/history")}>
+          View History
+        </Button>
+        <Button variant="ghost" onClick={signOut}>
+          <LogOut className="h-4 w-4 mr-2" />
+          Sign Out
+        </Button>
+        <Button variant="destructive" onClick={() => setDeleteDialogOpen(true)}>
+          <Trash2 className="h-4 w-4 mr-2" />
+          Delete Account
+        </Button>
+      </div>
 
-      <DeleteAccountDialog open={deleteAccountDialogOpen} onOpenChange={setDeleteAccountDialogOpen} userRole="vendor" />
+      <DeleteAccountDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen} userRole="vendor" />
     </div>
   );
 }

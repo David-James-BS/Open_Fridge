@@ -49,15 +49,6 @@ export default function EditListing() {
   const [dietaryInfo, setDietaryInfo] = useState<DietaryType[]>([]);
   const [bestBefore, setBestBefore] = useState("");
 
-  // Ensure datetime-local min is now in local time (no past selections)
-  const minDateTimeLocal = (() => {
-    const now = new Date();
-    now.setSeconds(0, 0);
-    const offsetMs = now.getTimezoneOffset() * 60 * 1000;
-    const local = new Date(now.getTime() - offsetMs);
-    return local.toISOString().slice(0, 16);
-  })();
-
   useEffect(() => {
     fetchListing();
   }, [id]);
@@ -102,18 +93,6 @@ export default function EditListing() {
     setSaving(true);
 
     try {
-      const selected = new Date(bestBefore);
-      if (isNaN(selected.getTime())) {
-        toast.error("Invalid date/time selected");
-        setSaving(false);
-        return;
-      }
-      if (selected.getTime() <= Date.now()) {
-        toast.error("Best before must be in the future");
-        setSaving(false);
-        return;
-      }
-
       const { error } = await supabase
         .from("food_listings")
         .update({
@@ -195,13 +174,12 @@ export default function EditListing() {
             <div>
               <Label htmlFor="bestBefore">Best Before *</Label>
               <Input
-            id="bestBefore"
-            type="datetime-local"
-            value={bestBefore}
-            min={minDateTimeLocal}
-            onChange={(e) => setBestBefore(e.target.value)}
-            required
-          />
+                id="bestBefore"
+                type="datetime-local"
+                value={bestBefore}
+                onChange={(e) => setBestBefore(e.target.value)}
+                required
+              />
             </div>
 
             <div className="flex gap-3">

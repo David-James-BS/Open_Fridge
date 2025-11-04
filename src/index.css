@@ -109,18 +109,4 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground;
   }
-
-  /* iOS-specific QR Scanner fixes */
-  #qr-reader video {
-    width: 100% !important;
-    max-width: 100% !important;
-    object-fit: cover !important;
-    display: block !important;
-  }
-
-  #qr-reader canvas {
-    display: block !important;
-    width: 100% !important;
-    max-width: 100% !important;
-  }
 }

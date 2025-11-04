@@ -9,8 +9,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Shield, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { SECURITY_QUESTIONS } from '@/constants/securityQuestions';
-import { hashSecurityAnswer } from '@/utils/securityHash';
+
+const SECURITY_QUESTIONS = [
+  "What is your favorite food as a child?",
+  "What is the name of the first school you attended?",
+  "What is your best friend's name?",
+  "What is your favorite book?"
+];
 
 export default function AdminAuth() {
   const navigate = useNavigate();
@@ -18,20 +23,14 @@ export default function AdminAuth() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [securityQuestion1, setSecurityQuestion1] = useState('');
-  const [securityAnswer1, setSecurityAnswer1] = useState('');
-  const [securityQuestion2, setSecurityQuestion2] = useState('');
-  const [securityAnswer2, setSecurityAnswer2] = useState('');
+  const [securityQuestion, setSecurityQuestion] = useState('');
+  const [securityAnswer, setSecurityAnswer] = useState('');
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
-  const [resetSecurityAnswer1, setResetSecurityAnswer1] = useState('');
-  const [resetSecurityAnswer2, setResetSecurityAnswer2] = useState('');
+  const [resetSecurityAnswer, setResetSecurityAnswer] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
-  const [fetchedQuestion1, setFetchedQuestion1] = useState('');
-  const [fetchedQuestion2, setFetchedQuestion2] = useState('');
-  const [questionsFetched, setQuestionsFetched] = useState(false);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,19 +44,10 @@ export default function AdminAuth() {
       return;
     }
 
-    if (!securityQuestion1 || !securityAnswer1 || !securityQuestion2 || !securityAnswer2) {
+    if (!securityQuestion || !securityAnswer) {
       toast({
         title: 'Missing information',
-        description: 'Please select both security questions and provide answers',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (securityQuestion1 === securityQuestion2) {
-      toast({
-        title: 'Invalid selection',
-        description: 'Please select different security questions',
+        description: 'Please select a security question and provide an answer',
         variant: 'destructive',
       });
       return;
@@ -66,19 +56,13 @@ export default function AdminAuth() {
     setLoading(true);
 
     try {
-      // Hash answers before sending
-      const answer1Hash = await hashSecurityAnswer(securityAnswer1);
-      const answer2Hash = await hashSecurityAnswer(securityAnswer2);
-
       // Call edge function to create admin user
       const { data, error } = await supabase.functions.invoke('create-admin-user', {
         body: { 
           email, 
           password,
-          securityQuestion1,
-          securityAnswer1Hash: answer1Hash,
-          securityQuestion2,
-          securityAnswer2Hash: answer2Hash
+          securityQuestion,
+          securityAnswer: securityAnswer.toLowerCase()
         },
       });
 
@@ -93,10 +77,8 @@ export default function AdminAuth() {
       // Clear signup fields and switch to sign in
       setPassword('');
       setConfirmPassword('');
-      setSecurityQuestion1('');
-      setSecurityAnswer1('');
-      setSecurityQuestion2('');
-      setSecurityAnswer2('');
+      setSecurityQuestion('');
+      setSecurityAnswer('');
     } catch (error: any) {
       toast({
         title: 'Sign up failed',
@@ -150,46 +132,6 @@ export default function AdminAuth() {
     }
   };
 
-  const handleFetchSecurityQuestions = async () => {
-    if (!resetEmail) {
-      toast({
-        title: 'Email required',
-        description: 'Please enter your email address',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('security_question_1, security_question_2')
-        .eq('email', resetEmail)
-        .single();
-
-      if (error || !profile?.security_question_1 || !profile?.security_question_2) {
-        throw new Error('No security questions found for this email');
-      }
-
-      setFetchedQuestion1(profile.security_question_1);
-      setFetchedQuestion2(profile.security_question_2);
-      setQuestionsFetched(true);
-      toast({
-        title: 'Security questions found',
-        description: 'Please answer both security questions',
-      });
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message || 'Could not find security questions for this email',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -202,8 +144,7 @@ export default function AdminAuth() {
       const { data, error } = await supabase.functions.invoke('reset-password-with-security', {
         body: {
           email: resetEmail,
-          securityAnswer1: resetSecurityAnswer1,
-          securityAnswer2: resetSecurityAnswer2,
+          securityAnswer: resetSecurityAnswer,
           newPassword
         }
       });
@@ -218,19 +159,24 @@ export default function AdminAuth() {
 
       setShowForgotPassword(false);
       setResetEmail('');
-      setResetSecurityAnswer1('');
-      setResetSecurityAnswer2('');
+      setResetSecurityAnswer('');
       setNewPassword('');
       setConfirmNewPassword('');
-      setFetchedQuestion1('');
-      setFetchedQuestion2('');
-      setQuestionsFetched(false);
     } catch (error: any) {
-      toast({
-        title: "Password reset failed",
-        description: error.message,
-        variant: "destructive"
-      });
+      if (error.message.includes("Incorrect security answer")) {
+        toast({
+          title: "Incorrect answer",
+          description: "The answer is incorrect.",
+          variant: "destructive"
+        });
+        setShowForgotPassword(false);
+      } else {
+        toast({
+          title: "Password reset failed",
+          description: error.message,
+          variant: "destructive"
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -272,91 +218,46 @@ export default function AdminAuth() {
                     id="reset-email"
                     type="email"
                     value={resetEmail}
-                    onChange={(e) => {
-                      setResetEmail(e.target.value);
-                      setQuestionsFetched(false);
-                      setFetchedQuestion1('');
-                      setFetchedQuestion2('');
-                    }}
+                    onChange={(e) => setResetEmail(e.target.value)}
                     required
-                    disabled={questionsFetched}
                   />
                 </div>
-                
-                {!questionsFetched && (
-                  <Button 
-                    type="button" 
-                    onClick={handleFetchSecurityQuestions} 
-                    className="w-full" 
-                    disabled={loading || !resetEmail}
-                  >
-                    {loading ? "Checking..." : "Continue"}
-                  </Button>
-                )}
-
-                {questionsFetched && (
-                  <>
-                    <div className="space-y-2">
-                      <Label>Security Question 1</Label>
-                      <div className="p-3 bg-muted rounded-md text-sm">
-                        {fetchedQuestion1}
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="reset-security-answer-1">Answer 1</Label>
-                      <Input
-                        id="reset-security-answer-1"
-                        type="text"
-                        value={resetSecurityAnswer1}
-                        onChange={(e) => setResetSecurityAnswer1(e.target.value)}
-                        placeholder="Enter your answer"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Security Question 2</Label>
-                      <div className="p-3 bg-muted rounded-md text-sm">
-                        {fetchedQuestion2}
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="reset-security-answer-2">Answer 2</Label>
-                      <Input
-                        id="reset-security-answer-2"
-                        type="text"
-                        value={resetSecurityAnswer2}
-                        onChange={(e) => setResetSecurityAnswer2(e.target.value)}
-                        placeholder="Enter your answer"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="new-password">New Password</Label>
-                      <Input
-                        id="new-password"
-                        type="password"
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        required
-                        minLength={6}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="confirm-new-password">Confirm New Password</Label>
-                      <Input
-                        id="confirm-new-password"
-                        type="password"
-                        value={confirmNewPassword}
-                        onChange={(e) => setConfirmNewPassword(e.target.value)}
-                        required
-                        minLength={6}
-                      />
-                    </div>
-                    <Button type="submit" className="w-full" disabled={loading}>
-                      {loading ? 'Resetting...' : 'Reset Password'}
-                    </Button>
-                  </>
-                )}
+                <div className="space-y-2">
+                  <Label htmlFor="reset-security-answer">Security Answer</Label>
+                  <Input
+                    id="reset-security-answer"
+                    type="text"
+                    value={resetSecurityAnswer}
+                    onChange={(e) => setResetSecurityAnswer(e.target.value)}
+                    placeholder="Answer to your security question"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="new-password">New Password</Label>
+                  <Input
+                    id="new-password"
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    required
+                    minLength={6}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-new-password">Confirm New Password</Label>
+                  <Input
+                    id="confirm-new-password"
+                    type="password"
+                    value={confirmNewPassword}
+                    onChange={(e) => setConfirmNewPassword(e.target.value)}
+                    required
+                    minLength={6}
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? 'Resetting...' : 'Reset Password'}
+                </Button>
               </form>
             </CardContent>
           </Card>
@@ -469,62 +370,31 @@ export default function AdminAuth() {
                       required
                     />
                   </div>
-                  <div className="border-t pt-4 space-y-4">
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Security Questions (for password recovery)
-                    </p>
-                    <div className="space-y-2">
-                      <Label htmlFor="security-question-1">Security Question 1</Label>
-                      <Select value={securityQuestion1} onValueChange={setSecurityQuestion1} required>
-                        <SelectTrigger id="security-question-1">
-                          <SelectValue placeholder="Select first question" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {SECURITY_QUESTIONS.map((question) => (
-                            <SelectItem key={question} value={question} disabled={question === securityQuestion2}>
-                              {question}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="security-answer-1">Answer 1</Label>
-                      <Input
-                        id="security-answer-1"
-                        type="text"
-                        value={securityAnswer1}
-                        onChange={(e) => setSecurityAnswer1(e.target.value)}
-                        placeholder="Your answer"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="security-question-2">Security Question 2</Label>
-                      <Select value={securityQuestion2} onValueChange={setSecurityQuestion2} required>
-                        <SelectTrigger id="security-question-2">
-                          <SelectValue placeholder="Select second question" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {SECURITY_QUESTIONS.map((question) => (
-                            <SelectItem key={question} value={question} disabled={question === securityQuestion1}>
-                              {question}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="security-answer-2">Answer 2</Label>
-                      <Input
-                        id="security-answer-2"
-                        type="text"
-                        value={securityAnswer2}
-                        onChange={(e) => setSecurityAnswer2(e.target.value)}
-                        placeholder="Your answer"
-                        required
-                      />
-                    </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="security-question">Security Question</Label>
+                    <Select value={securityQuestion} onValueChange={setSecurityQuestion} required>
+                      <SelectTrigger id="security-question">
+                        <SelectValue placeholder="Select a security question" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SECURITY_QUESTIONS.map((question) => (
+                          <SelectItem key={question} value={question}>
+                            {question}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="security-answer">Security Answer</Label>
+                    <Input
+                      id="security-answer"
+                      type="text"
+                      value={securityAnswer}
+                      onChange={(e) => setSecurityAnswer(e.target.value)}
+                      placeholder="Your answer"
+                      required
+                    />
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
                     {loading ? 'Creating account...' : 'Create Admin Account'}

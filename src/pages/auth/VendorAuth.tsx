@@ -9,8 +9,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Store, Upload, Clock } from "lucide-react";
-import { SECURITY_QUESTIONS } from "@/constants/securityQuestions";
-import { hashSecurityAnswer } from "@/utils/securityHash";
+
+const SECURITY_QUESTIONS = [
+  "What is your favorite food as a child?",
+  "What is the name of the first school you attended?",
+  "What is your best friend's name?",
+  "What is your favorite book?"
+];
 
 const VendorAuth = () => {
   const [email, setEmail] = useState("");
@@ -18,23 +23,17 @@ const VendorAuth = () => {
   const [stallName, setStallName] = useState("");
   const [phone, setPhone] = useState("");
   const [location, setLocation] = useState("");
-  const [securityQuestion1, setSecurityQuestion1] = useState("");
-  const [securityAnswer1, setSecurityAnswer1] = useState("");
-  const [securityQuestion2, setSecurityQuestion2] = useState("");
-  const [securityAnswer2, setSecurityAnswer2] = useState("");
+  const [securityQuestion, setSecurityQuestion] = useState("");
+  const [securityAnswer, setSecurityAnswer] = useState("");
   const [loading, setLoading] = useState(false);
   const [showLicenseUpload, setShowLicenseUpload] = useState(false);
   const [licenseFile, setLicenseFile] = useState<File | null>(null);
   const [licenseStatus, setLicenseStatus] = useState<string | null>(null);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
-  const [resetSecurityAnswer1, setResetSecurityAnswer1] = useState("");
-  const [resetSecurityAnswer2, setResetSecurityAnswer2] = useState("");
+  const [resetSecurityAnswer, setResetSecurityAnswer] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
-  const [fetchedQuestion1, setFetchedQuestion1] = useState("");
-  const [fetchedQuestion2, setFetchedQuestion2] = useState("");
-  const [questionsFetched, setQuestionsFetched] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -65,12 +64,8 @@ const VendorAuth = () => {
     setLoading(true);
 
     try {
-      if (!securityQuestion1 || !securityAnswer1 || !securityQuestion2 || !securityAnswer2) {
-        throw new Error("Please select both security questions and provide answers");
-      }
-
-      if (securityQuestion1 === securityQuestion2) {
-        throw new Error("Please select different security questions");
+      if (!securityQuestion || !securityAnswer) {
+        throw new Error("Please select a security question and provide an answer");
       }
 
       const { data, error } = await supabase.auth.signUp({
@@ -89,16 +84,10 @@ const VendorAuth = () => {
       if (error) throw error;
 
       if (data.user) {
-        // Hash answers before storing
-        const answer1Hash = await hashSecurityAnswer(securityAnswer1);
-        const answer2Hash = await hashSecurityAnswer(securityAnswer2);
-
-        // Update profile with security questions
+        // Update profile with security question
         await supabase.from("profiles").update({
-          security_question_1: securityQuestion1,
-          security_answer_1_hash: answer1Hash,
-          security_question_2: securityQuestion2,
-          security_answer_2_hash: answer2Hash
+          security_question: securityQuestion,
+          security_answer: securityAnswer.toLowerCase()
         }).eq("id", data.user.id);
 
         // Add user role
@@ -169,53 +158,11 @@ const VendorAuth = () => {
           description: "Signed in successfully.",
         });
         navigate("/vendor/dashboard");
-      } else if (license.status === "rejected") {
-        navigate("/vendor/license-rejection");
       }
     } catch (error: any) {
       toast({
         title: "Sign in failed",
         description: error.message,
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleFetchSecurityQuestions = async () => {
-    if (!resetEmail) {
-      toast({
-        title: "Email required",
-        description: "Please enter your email address",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('security_question_1, security_question_2')
-        .eq('email', resetEmail)
-        .single();
-
-      if (error || !profile?.security_question_1 || !profile?.security_question_2) {
-        throw new Error("No security questions found for this email");
-      }
-
-      setFetchedQuestion1(profile.security_question_1);
-      setFetchedQuestion2(profile.security_question_2);
-      setQuestionsFetched(true);
-      toast({
-        title: "Security questions found",
-        description: "Please answer both security questions",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Could not find security questions for this email",
         variant: "destructive"
       });
     } finally {
@@ -235,8 +182,7 @@ const VendorAuth = () => {
       const { data, error } = await supabase.functions.invoke('reset-password-with-security', {
         body: {
           email: resetEmail,
-          securityAnswer1: resetSecurityAnswer1,
-          securityAnswer2: resetSecurityAnswer2,
+          securityAnswer: resetSecurityAnswer,
           newPassword
         }
       });
@@ -251,19 +197,24 @@ const VendorAuth = () => {
 
       setShowForgotPassword(false);
       setResetEmail("");
-      setResetSecurityAnswer1("");
-      setResetSecurityAnswer2("");
+      setResetSecurityAnswer("");
       setNewPassword("");
       setConfirmNewPassword("");
-      setFetchedQuestion1("");
-      setFetchedQuestion2("");
-      setQuestionsFetched(false);
     } catch (error: any) {
-      toast({
-        title: "Password reset failed",
-        description: error.message,
-        variant: "destructive"
-      });
+      if (error.message.includes("Incorrect security answer")) {
+        toast({
+          title: "Incorrect answer",
+          description: "The answer is incorrect.",
+          variant: "destructive"
+        });
+        setShowForgotPassword(false);
+      } else {
+        toast({
+          title: "Password reset failed",
+          description: error.message,
+          variant: "destructive"
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -278,12 +229,11 @@ const VendorAuth = () => {
       if (!user) throw new Error("Not authenticated");
 
       const fileExt = licenseFile.name.split('.').pop();
-      const timestamp = Date.now();
-      const filePath = `${user.id}/license_${timestamp}.${fileExt}`;
+      const filePath = `${user.id}/license.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from('licenses')
-        .upload(filePath, licenseFile);
+        .upload(filePath, licenseFile, { upsert: true });
 
       if (uploadError) throw uploadError;
 
@@ -293,13 +243,10 @@ const VendorAuth = () => {
 
       const { error: dbError } = await supabase
         .from("licenses")
-        .insert({
+        .upsert({
           user_id: user.id,
           file_url: publicUrl,
-          status: "pending",
-          rejection_reason: null,
-          reviewed_at: null,
-          reviewed_by: null,
+          status: "pending"
         });
 
       if (dbError) throw dbError;
@@ -310,7 +257,6 @@ const VendorAuth = () => {
       });
 
       setLicenseStatus("pending");
-      navigate('/vendor/license-pending');
     } catch (error: any) {
       toast({
         title: "Upload failed",
@@ -351,91 +297,46 @@ const VendorAuth = () => {
                   id="reset-email"
                   type="email"
                   value={resetEmail}
-                  onChange={(e) => {
-                    setResetEmail(e.target.value);
-                    setQuestionsFetched(false);
-                    setFetchedQuestion1("");
-                    setFetchedQuestion2("");
-                  }}
+                  onChange={(e) => setResetEmail(e.target.value)}
                   required
-                  disabled={questionsFetched}
                 />
               </div>
-              
-              {!questionsFetched && (
-                <Button 
-                  type="button" 
-                  onClick={handleFetchSecurityQuestions} 
-                  className="w-full" 
-                  disabled={loading || !resetEmail}
-                >
-                  {loading ? "Checking..." : "Continue"}
-                </Button>
-              )}
-
-              {questionsFetched && (
-                <>
-                  <div className="space-y-2">
-                    <Label>Security Question 1</Label>
-                    <div className="p-3 bg-muted rounded-md text-sm">
-                      {fetchedQuestion1}
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="reset-security-answer-1">Answer 1</Label>
-                    <Input
-                      id="reset-security-answer-1"
-                      type="text"
-                      value={resetSecurityAnswer1}
-                      onChange={(e) => setResetSecurityAnswer1(e.target.value)}
-                      placeholder="Enter your answer"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Security Question 2</Label>
-                    <div className="p-3 bg-muted rounded-md text-sm">
-                      {fetchedQuestion2}
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="reset-security-answer-2">Answer 2</Label>
-                    <Input
-                      id="reset-security-answer-2"
-                      type="text"
-                      value={resetSecurityAnswer2}
-                      onChange={(e) => setResetSecurityAnswer2(e.target.value)}
-                      placeholder="Enter your answer"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="new-password">New Password</Label>
-                    <Input
-                      id="new-password"
-                      type="password"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      required
-                      minLength={6}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="confirm-new-password">Confirm New Password</Label>
-                    <Input
-                      id="confirm-new-password"
-                      type="password"
-                      value={confirmNewPassword}
-                      onChange={(e) => setConfirmNewPassword(e.target.value)}
-                      required
-                      minLength={6}
-                    />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Resetting..." : "Reset Password"}
-                  </Button>
-                </>
-              )}
+              <div className="space-y-2">
+                <Label htmlFor="reset-security-answer">Security Answer</Label>
+                <Input
+                  id="reset-security-answer"
+                  type="text"
+                  value={resetSecurityAnswer}
+                  onChange={(e) => setResetSecurityAnswer(e.target.value)}
+                  placeholder="Answer to your security question"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="new-password">New Password</Label>
+                <Input
+                  id="new-password"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                  minLength={6}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirm-new-password">Confirm New Password</Label>
+                <Input
+                  id="confirm-new-password"
+                  type="password"
+                  value={confirmNewPassword}
+                  onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  required
+                  minLength={6}
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Resetting..." : "Reset Password"}
+              </Button>
             </form>
           </Card>
         </div>
@@ -465,6 +366,35 @@ const VendorAuth = () => {
     );
   }
 
+  if (licenseStatus === "rejected") {
+    return (
+      <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-4">
+        <Card className="max-w-md p-8 text-center space-y-6">
+          <div>
+            <h2 className="text-2xl font-bold mb-2 text-destructive">License Rejected</h2>
+            <p className="text-muted-foreground mb-4">
+              Unfortunately, your license was not approved. Please upload a new license document.
+            </p>
+          </div>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="license-reupload">Upload New License</Label>
+              <Input
+                id="license-reupload"
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={(e) => setLicenseFile(e.target.files?.[0] || null)}
+                className="mt-2"
+              />
+            </div>
+            <Button onClick={handleLicenseUpload} disabled={!licenseFile || loading} className="w-full">
+              {loading ? "Uploading..." : "Upload License"}
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   if (showLicenseUpload) {
     return (
@@ -614,62 +544,31 @@ const VendorAuth = () => {
                     minLength={6}
                   />
                 </div>
-                <div className="border-t pt-4 space-y-4">
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Security Questions (for password recovery)
-                  </p>
-                  <div className="space-y-2">
-                    <Label htmlFor="security-question-1">Security Question 1</Label>
-                    <Select value={securityQuestion1} onValueChange={setSecurityQuestion1} required>
-                      <SelectTrigger id="security-question-1">
-                        <SelectValue placeholder="Select first question" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {SECURITY_QUESTIONS.map((question) => (
-                          <SelectItem key={question} value={question} disabled={question === securityQuestion2}>
-                            {question}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="security-answer-1">Answer 1</Label>
-                    <Input
-                      id="security-answer-1"
-                      type="text"
-                      value={securityAnswer1}
-                      onChange={(e) => setSecurityAnswer1(e.target.value)}
-                      placeholder="Your answer"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="security-question-2">Security Question 2</Label>
-                    <Select value={securityQuestion2} onValueChange={setSecurityQuestion2} required>
-                      <SelectTrigger id="security-question-2">
-                        <SelectValue placeholder="Select second question" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {SECURITY_QUESTIONS.map((question) => (
-                          <SelectItem key={question} value={question} disabled={question === securityQuestion1}>
-                            {question}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="security-answer-2">Answer 2</Label>
-                    <Input
-                      id="security-answer-2"
-                      type="text"
-                      value={securityAnswer2}
-                      onChange={(e) => setSecurityAnswer2(e.target.value)}
-                      placeholder="Your answer"
-                      required
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="security-question">Security Question</Label>
+                  <Select value={securityQuestion} onValueChange={setSecurityQuestion} required>
+                    <SelectTrigger id="security-question">
+                      <SelectValue placeholder="Select a security question" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SECURITY_QUESTIONS.map((question) => (
+                        <SelectItem key={question} value={question}>
+                          {question}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="security-answer">Security Answer</Label>
+                  <Input
+                    id="security-answer"
+                    type="text"
+                    value={securityAnswer}
+                    onChange={(e) => setSecurityAnswer(e.target.value)}
+                    placeholder="Your answer"
+                    required
+                  />
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? "Creating account..." : "Create Account"}

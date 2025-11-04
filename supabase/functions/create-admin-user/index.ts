@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { email, password, securityQuestion1, securityAnswer1Hash, securityQuestion2, securityAnswer2Hash } = await req.json();
+    const { email, password, securityQuestion, securityAnswer } = await req.json();
 
     if (!email || !password) {
       return new Response(
@@ -79,20 +79,18 @@ serve(async (req) => {
       throw roleError;
     }
 
-    // Update profile with security questions if provided
-    if (securityQuestion1 && securityAnswer1Hash && securityQuestion2 && securityAnswer2Hash) {
+    // Update profile with security question if provided
+    if (securityQuestion && securityAnswer) {
       const { error: profileError } = await supabaseAdmin
         .from('profiles')
         .update({
-          security_question_1: securityQuestion1,
-          security_answer_1_hash: securityAnswer1Hash,
-          security_question_2: securityQuestion2,
-          security_answer_2_hash: securityAnswer2Hash
+          security_question: securityQuestion,
+          security_answer: securityAnswer
         })
         .eq('id', authData.user.id);
 
       if (profileError) {
-        console.error('Error updating profile with security questions:', profileError);
+        console.error('Error updating profile with security question:', profileError);
       }
     }
 
