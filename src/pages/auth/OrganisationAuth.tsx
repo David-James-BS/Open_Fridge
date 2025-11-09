@@ -323,22 +323,22 @@ const OrganisationAuth = () => {
 
   if (showForgotPassword) {
     return (
-      <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-4">
-        <div className="w-full max-w-md space-y-6">
-          <Button variant="ghost" onClick={() => setShowForgotPassword(false)} className="mb-4">
+      <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-3 sm:p-4">
+        <div className="w-full max-w-md space-y-4 sm:space-y-6">
+          <Button variant="ghost" onClick={() => setShowForgotPassword(false)} className="mb-2 sm:mb-4">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to sign in
           </Button>
 
           <div className="text-center space-y-2">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary shadow-primary">
-              <Heart className="h-8 w-8 text-primary-foreground" />
+            <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-primary shadow-primary">
+              <Heart className="h-6 w-6 sm:h-8 sm:w-8 text-primary-foreground" />
             </div>
-            <h1 className="text-3xl font-bold">Reset Password</h1>
-            <p className="text-muted-foreground">Answer your security question to reset your password</p>
+            <h1 className="text-2xl sm:text-3xl font-bold">Reset Password</h1>
+            <p className="text-sm sm:text-base text-muted-foreground px-2">Answer your security question to reset your password</p>
           </div>
 
-          <Card className="p-6">
+          <Card className="p-4 sm:p-6">
             <form onSubmit={handleForgotPassword} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="reset-email">Email</Label>
@@ -440,8 +440,8 @@ const OrganisationAuth = () => {
 
   if (licenseStatus === "pending") {
     return (
-      <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-4">
-        <Card className="max-w-md p-8 text-center space-y-6">
+      <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-3 sm:p-4">
+        <Card className="max-w-md p-4 sm:p-8 text-center space-y-4 sm:space-y-6">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-accent/20">
             <Clock className="h-10 w-10 text-accent-foreground animate-pulse" />
           </div>
@@ -460,8 +460,8 @@ const OrganisationAuth = () => {
 
   if (licenseStatus === "rejected") {
     return (
-      <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-4">
-        <Card className="max-w-md p-8 text-center space-y-6">
+      <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-3 sm:p-4">
+        <Card className="max-w-md p-4 sm:p-8 text-center space-y-4 sm:space-y-6">
           <div>
             <h2 className="text-2xl font-bold mb-2 text-destructive">License Rejected</h2>
             <p className="text-muted-foreground mb-4">
@@ -490,13 +490,13 @@ const OrganisationAuth = () => {
 
   if (showLicenseUpload) {
     return (
-      <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-4">
-        <Card className="max-w-md p-8 space-y-6">
+      <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-3 sm:p-4">
+        <Card className="max-w-md p-4 sm:p-8 space-y-4 sm:space-y-6">
           <div className="text-center space-y-2">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary shadow-primary">
-              <Upload className="h-8 w-8 text-primary-foreground" />
+            <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-primary shadow-primary">
+              <Upload className="h-6 w-6 sm:h-8 sm:w-8 text-primary-foreground" />
             </div>
-            <h2 className="text-2xl font-bold">Upload Organisation License</h2>
+            <h2 className="text-xl sm:text-2xl font-bold">Upload Organisation License</h2>
             <p className="text-muted-foreground">
               Please upload your charitable organisation registration or license for verification.
             </p>
@@ -522,22 +522,22 @@ const OrganisationAuth = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-6">
-        <Button variant="ghost" onClick={() => navigate("/")} className="mb-4">
+    <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-3 sm:p-4">
+      <div className="w-full max-w-md space-y-4 sm:space-y-6">
+        <Button variant="ghost" onClick={() => navigate("/")} className="mb-2 sm:mb-4">
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to role selection
         </Button>
 
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary shadow-primary">
-            <Heart className="h-8 w-8 text-primary-foreground" />
+          <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-primary shadow-primary">
+            <Heart className="h-6 w-6 sm:h-8 sm:w-8 text-primary-foreground" />
           </div>
-          <h1 className="text-3xl font-bold">Organisation Portal</h1>
-          <p className="text-muted-foreground">Reserve and redistribute food to those in need</p>
+          <h1 className="text-2xl sm:text-3xl font-bold">Organisation Portal</h1>
+          <p className="text-sm sm:text-base text-muted-foreground px-2">Reserve and redistribute food to those in need</p>
         </div>
 
-        <Card className="p-6">
+        <Card className="p-4 sm:p-6">
           <Tabs defaultValue="signin">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">Sign In</TabsTrigger>
