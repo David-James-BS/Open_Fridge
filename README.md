@@ -2,6 +2,8 @@
 
 A web app built with Vite, TypeScript, and React for managing fridge inventory and related workflows.
 
+Watch a quick overview of PlaceIt! here: https://youtu.be/L6MMmyl2Aww
+
 ## Project overview
 
 This repository contains the Open_Fridge frontend. It uses modern web tooling (Vite + TypeScript), Tailwind CSS, and shadcn-ui components.
