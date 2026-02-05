@@ -113,15 +113,4 @@ Please follow the existing TypeScript and styling conventions. Run linters and f
 - If dev server fails to start, confirm Node version (`node -v`) and reinstall dependencies.
 - If environment-specific features rely on Supabase, ensure your `.env` variables (Supabase URL/Key) are set before running.
 
-## License & contact
 
-Include your license here (e.g., MIT). For questions, open an issue or contact the repository owner.
-
----
-
-If you'd like, I can also:
-
-- add a short `README` section documenting how to run the included Supabase functions locally (via `supabase` CLI),
-- or generate a small CONTRIBUTING.md and a basic CODE_OF_CONDUCT.md.
-
-Let me know which you'd prefer.
